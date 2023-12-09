@@ -1,0 +1,39 @@
+name: slm
+channels:
+  - conda-forge
+  - pytorch
+  - huggingface
+dependencies:
+  - python=3.11.*
+  - pip
+  - cython
+  - ipykernel
+  - ipython
+  - notebook
+  # major dependencies
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - sklearn-pandas
+  ## pytorch / transformers
+  - conda-forge:safetensors #==0.3.3
+  - conda-forge:tokenizers #>0.13,<0.14
+  - conda-forge:torchmetrics #>=1.1.1,<1.2
+  - conda-forge:sentence-transformers
+  - conda-forge:transformers #>4.28,<4.29
+  - huggingface:datasets
+  - pytorch:pytorch>2.0
+  # - pytorch:torchaudio #>=2.0,<2.1
+  - pytorch:torchdata>=0.7,<0.8
+  - pytorch:torchtext>=0.16,<0.17
+  # - pytorch:torchvision #>=0.15,<0.16
+  - rust
+  ## supporting packages
+  # - colorama  # or rich
+  - openpyxl
+  ## plotting
+  - matplotlib
+  - plotnine
+  - seaborn
+  - pyyaml

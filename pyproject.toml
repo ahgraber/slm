@@ -1,0 +1,267 @@
+# --- project ----------------------------------------------------------------
+[project]
+name = "slm"
+authors = [
+  { name="ahgraber", email="code@mail.ninerealmlabs.com" },
+]
+description = "Small Language Model(s) from scratch"
+dynamic = ["version"]
+readme = "README.md"
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: OS Independent",
+]
+
+requires-python = ">=3.9"
+dependencies = [
+  "numpy>=1.23",
+  "pandas>=2.0",
+  "scikit-learn",
+  "scipy",
+  "matplotlib",
+  "seaborn",
+  "python-dateutil",
+  "pyyaml",
+]
+[project.optional-dependencies]
+docs = [
+  "numpydoc",
+  "sphinx",
+  "sphinx_rtd_theme",
+]
+format = [
+  "ruff",
+]
+test = [
+  "coverage>=4.2.0",
+  "pytest",
+  "pytest-asyncio",
+  "pytest-cov",
+]
+dev = [
+  "slm[doc]",
+  "slm[format]",
+  "slm[test]",
+]
+
+[project.urls]
+"repository" = "https://github.com/ahgraber/slm"
+
+# ref: https://hatch.pypa.io/1.2/version/#configuration
+[tool.hatch.version]
+path = "./src/VERSION"
+pattern = "^(?P<version>.+?)(\n)"
+
+[tool.hatch.build]
+only-include = [
+  "./src/VERSION",
+  "src/slm",
+  "tests",
+]
+skip-excluded-dirs = true
+# sources = ["src"]
+
+[tool.hatch.build.targets.sdist]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/slm"]
+macos-max-compat = true
+
+# --- build-system -----------------------------------------------------------
+# ref: https://packaging.python.org/en/latest/tutorials/packaging-projects/
+# these should match the "setup-requires" packages in `setup.cfg`
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# --- ruff -------------------------------------------------------------------
+[tool.ruff]
+# Assumed Python version
+target-version = "py39"
+
+# file selection
+extend-exclude = [
+  '.ci',
+  '.pytest_cache',
+  'docs',
+  '*.egg-info',
+  '.ipynb_checkpoints',
+  '.env',
+  '.envrc',
+]
+extend-include = ["*.ipynb"]
+
+# Directories with source code
+src = ["notebooks", "src", "tests"]
+
+# Max line length
+line-length = 119
+indent-width = 4
+
+select = [
+  'A', # flake8 builtins
+  'B', # flake8 bugbear
+  'C4', # flake8 comprehensions
+  'C90', # mccabe
+  'D', # pydocstyle
+  'E', # pycodestyle
+  'F', # pyflakes
+  'I', # isort
+  'N', # pep8-naming
+  # 'PTH', # flake8-use-pathlib
+  'Q',  # flake8-quotes
+  'S',  # bandit
+  'SIM',  # flake8-simplify
+  'TRY',  # tryceratops
+  'W', # pycodestyle
+  # 'T20', # flake8 print
+]
+
+ignore = [
+  "B905",  # zip strict=True; remove once python <3.10 support is dropped.
+  "D100",  # do not require module-level docstrings
+  "D104",  # do not require package docstrings
+  "D107",  # do not require docstrings in __init__ files
+  # "D205",  # don't require linebreak after docstring (ruff vs black conflict)
+  "D206",  # redundant w formatter
+  "D300",  # redundant w formatter
+  "E111",  # redundant w formatter
+  "E114",  # redundant w formatter
+  "E117",  # redundant w formatter
+  # "E203",  # not in ruff
+  # "E265",  # not in ruff
+  # "E266",  # not in ruff
+  "E501",  # line too long
+  "F401",  # unused import
+  "F403",  # import *
+  "F405",  # defined from import *
+  # "F541",  # f-string missing placeholders
+  "N999",  # allow "invalid" module names due to jinja templates
+  "Q000",  # redundant w formatter
+  "Q001",  # redundant w formatter
+  "Q002",  # redundant w formatter
+  "Q003",  # redundant w formatter
+  # "S101",  # assert
+  "S311",  # allow psuedorandom generators (we use for stats)
+  "SIM105",  # allow except: pass
+  "TRY003",  # Avoid specifying messages outside exception class; overly strict, especially for ValueError
+  "TRY201",  # Allow raise without exception name (align with Sonarlint)
+  "W191",  # redundant w formatter
+  # "W503",  # not in ruff
+  "COM812",  # redundant w formatter
+  "COM819",  # redundant w formatter
+  "ISC001",  # redundant w formatter
+  "ISC002",  # redundant w formatter
+]
+
+# Default autofix behavior
+fix = true
+# Avoid trying to fix extension types:
+unfixable = ["B"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+exclude = ["*.pyi"]
+
+[tool.ruff.per-file-ignores]
+# # Ignore `E402` (import violations) in all `__init__.py` files,
+# # and in `path/to/file.py`.
+# "__init__.py" = ["E402"]
+# "path/to/file.py" = ["E402"]
+".ci/*" = ["D"]
+"docs/*" = ["D"]
+"notebooks/*" = ["B018", "D", "S"]
+"tests/*" = ["D", "S101", "S301"]
+
+# --- ruff plugins --------------------
+[tool.ruff.flake8-bugbear]
+extend-immutable-calls = [
+    "chr",
+    "typer.Argument",
+    "typer.Option",
+]
+
+[tool.ruff.isort]
+combine-as-imports = true
+extra-standard-library = ["yaml"]
+# forced-separate = ["scipy", "sklearn", "statsmodels", "torch"]
+force-sort-within-sections = true
+# force-wrap-aliases = true  # incompatible with formatter
+relative-imports-order = "closest-to-furthest"
+
+# known-first-party = ["ds_utils"]
+known-local-folder = ["src"] # for relative imports
+section-order = ["future", "standard-library", "third-party", "sci", "torch", "plot", "pmi", "first-party", "local-folder"]
+
+[tool.ruff.isort.sections]
+"sci" = ["numpy", "pandas", "scipy", "sklearn", "statsmodels", "xgboost"]
+"torch" = ["datasets", "lightning", "torch", "torchaudio", "torchmetrics", "torchtext", "torchvision", "tokenizers", "transformers", "semantic_kernel"]
+"plot" = ["cmcrameri", "matplotlib", "plotly", "plotnine", "seaborn"]
+
+[tool.ruff.mccabe]
+max-complexity = 18
+
+[tool.ruff.pep8-naming]
+ignore-names = []
+
+[tool.ruff.pydocstyle]
+convention = "numpy"
+
+# --- pytest -----------------------------------------------------------------
+# ref: https://docs.pytest.org/en/7.3.x/reference/customize.html
+[tool.pytest.ini_options]
+addopts = '''
+    -ra
+    --strict-markers
+    --ignore=docs/conf.py
+    --ignore=setup.py
+    --ignore=ci
+    --ignore=.eggs
+    --tb=short
+'''
+    # --doctest-modules
+    # --doctest-glob=\*.rst
+norecursedirs = [
+    ".env",
+    ".git",
+    ".nox",
+    ".pytest_cache",
+    ".tox",
+    "__pycache__",
+    "dist",
+    "docs",
+    "build",
+    "migrations",
+    "notebooks",
+    "writeup",
+]
+python_files = [
+    "test_*.py",
+    "*_test.py",
+    "tests.py",
+]
+pythonpath = "src"
+testpaths = [
+    "tests",
+]
+# log_cli = true
+
+
+# --- coverage ---------------------------------------------------------------
+[tool.coverage.paths]
+source = ["src", "*/site-packages"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+show_missing = true

@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.sops.* diff=sopsdiffer
+*.sops.toml linguist-language=JSON
+
+./dotfiles/gitconfig filter=gitconfig_email
+./dotfiles/gitconfig filter=gitconfig_name

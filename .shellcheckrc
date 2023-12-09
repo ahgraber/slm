@@ -1,0 +1,14 @@
+### Allow shellcheck to follow arbitrary file paths in `source` statements
+enable=external-sources
+
+### optional config
+# enable=add-default-case
+enable=avoid-nullary-conditions
+enable=check-unassigned-uppercase
+enable=deprecate-which
+enable=quote-safe-variables
+# enable=require-double-brackets
+# enable=require-variable-braces
+
+### Specific rule customizations
+# disable=SC1071 # disable error on zsh shebang

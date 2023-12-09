@@ -1,0 +1,155 @@
+# Standard .gitignore for Data Science projects at PMI
+
+# ignore dot directories
+.**/
+
+# Ignore everything on these paths
+artifacts/**
+# data/raw/**
+# data/int/**
+# data/processed/**
+logs/**
+notebooks/**
+src/**/*.yml
+src/**/*.yaml
+writeup/**
+**/old
+
+# Ignore these data file types
+*.log
+*.pkl
+
+*.csv
+*.xls
+*.xlsx
+
+*.doc
+*.docx
+*.html
+*.pdf
+*.ppt
+*.pptx
+*.txt
+
+*.gif
+*.jpg
+*.jpeg
+*.png
+
+*.7z
+*.bz
+*.bz2
+*.gz
+*.gzip
+*.rar
+*.tar
+*.tz
+*.xz
+*.zip
+
+*.db
+*.rdb
+
+# Keep these files, even if ignored above
+!**/.gitkeep
+!**/.gitignore
+!.ci/
+!data/processed/**/*.zip
+!notebooks/*.py
+!notebooks/*.ipynb
+!*requirements.txt
+!*spec*.txt
+
+# dotenv
+.env
+.envrc
+
+# OS Junk
+._*
+.DS_Store
+Thumbs.db
+settings.json
+
+### Python Ignores
+__pycache__
+
+# pyenv
+.python-version
+
+# virtualenv
+.venv
+env/
+ENV/
+venv/
+
+# IPython Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Unit test / coverage reports
+*.cover
+*.pytest_cache/
+.coverage
+.coverage.*
+.cache
+.cache/
+.hypothesis/
+.nox/
+.tox/
+coverage.xml
+htmlcov/
+nosetests.xml
+test-output.xml
+
+
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+.installed.cfg
+MANIFEST
+*.egg-info/
+*.egg
+*.whl
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# PyBuilder
+target/
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Sphinx documentation
+docs/_build/
+
+.python_packages
+
+# IDE
+.idea/
+.spyproject/
+.vscode/
+*.swp
+*.swo
