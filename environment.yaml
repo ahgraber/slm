@@ -16,6 +16,7 @@ dependencies:
   - scipy
   - scikit-learn
   - sklearn-pandas
+  - nltk
   ## pytorch / transformers
   - conda-forge:safetensors #==0.3.3
   - conda-forge:tokenizers #>0.13,<0.14
