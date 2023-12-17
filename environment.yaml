@@ -17,6 +17,7 @@ dependencies:
   - scikit-learn
   - sklearn-pandas
   - nltk
+  - spacy
   ## pytorch / transformers
   - conda-forge:safetensors #==0.3.3
   - conda-forge:tokenizers #>0.13,<0.14
@@ -38,3 +39,5 @@ dependencies:
   - plotnine
   - seaborn
   - pyyaml
+  ## testing
+  - pytest

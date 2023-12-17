@@ -37,15 +37,20 @@ List of packages in environment: "/Users/mithras/micromamba/envs/slm"
   ca-certificates                2023.11.17    hf0a4a13_0                   conda-forge
   cached-property                1.5.2         hd8ed1ab_1                   conda-forge
   cached_property                1.5.2         pyha770c72_1                 conda-forge
+  catalogue                      2.0.10        py311h267d04e_0              conda-forge
   certifi                        2023.11.17    pyhd8ed1ab_0                 conda-forge
   cffi                           1.16.0        py311h4a08483_0              conda-forge
   charset-normalizer             3.3.2         pyhd8ed1ab_0                 conda-forge
   click                          8.1.7         unix_pyh707e725_0            conda-forge
+  cloudpathlib                   0.16.0        pyhd8ed1ab_0                 conda-forge
   colorama                       0.4.6         pyhd8ed1ab_0                 conda-forge
   comm                           0.1.4         pyhd8ed1ab_0                 conda-forge
+  confection                     0.1.4         py311h8d5925d_0              conda-forge
   contourpy                      1.2.0         py311hd03642b_0              conda-forge
   cycler                         0.12.1        pyhd8ed1ab_0                 conda-forge
+  cymem                          2.0.8         py311ha891d26_1              conda-forge
   cython                         3.0.6         py311hbaf5611_0              conda-forge
+  cython-blis                    0.7.10        py311hb49d859_2              conda-forge
   dataclasses                    0.8           pyhc8e2a94_3                 conda-forge
   datasets                       2.14.7        pyhd8ed1ab_0                 conda-forge
   debugpy                        1.8.0         py311ha891d26_1              conda-forge
@@ -72,6 +77,7 @@ List of packages in environment: "/Users/mithras/micromamba/envs/slm"
   importlib-metadata             7.0.0         pyha770c72_0                 conda-forge
   importlib_metadata             7.0.0         hd8ed1ab_0                   conda-forge
   importlib_resources            6.1.1         pyhd8ed1ab_0                 conda-forge
+  iniconfig                      2.0.0         pyhd8ed1ab_0                 conda-forge
   ipykernel                      6.26.0        pyh3cd1d5f_0                 conda-forge
   ipython                        8.18.1        pyh707e725_3                 conda-forge
   isoduration                    20.11.0       pyhd8ed1ab_0                 conda-forge
@@ -88,12 +94,13 @@ List of packages in environment: "/Users/mithras/micromamba/envs/slm"
   jupyter_core                   5.5.0         py311h267d04e_0              conda-forge
   jupyter_events                 0.9.0         pyhd8ed1ab_0                 conda-forge
   jupyter_server                 2.12.1        pyhd8ed1ab_0                 conda-forge
-  jupyter_server_terminals       0.4.4         pyhd8ed1ab_1                 conda-forge
+  jupyter_server_terminals       0.5.0         pyhd8ed1ab_0                 conda-forge
   jupyterlab                     4.0.9         pyhd8ed1ab_0                 conda-forge
   jupyterlab_pygments            0.3.0         pyhd8ed1ab_0                 conda-forge
   jupyterlab_server              2.25.2        pyhd8ed1ab_0                 conda-forge
   kiwisolver                     1.4.5         py311he4fd1f5_1              conda-forge
   krb5                           1.21.2        h92f50d5_0                   conda-forge
+  langcodes                      3.3.0         pyhd8ed1ab_0                 conda-forge
   lcms2                          2.16          ha0e7c42_0                   conda-forge
   lerc                           4.0.0         h9a09cb3_0                   conda-forge
   libabseil                      20230802.1    cxx17_h13dd4ca_0             conda-forge
@@ -122,7 +129,7 @@ List of packages in environment: "/Users/mithras/micromamba/envs/slm"
   libgfortran5                   13.2.0        hf226fd6_1                   conda-forge
   libgoogle-cloud                2.12.0        hfb399a7_4                   conda-forge
   libgrpc                        1.59.3        hbcf6334_0                   conda-forge
-  libiconv                       1.17          he4db4b2_0                   conda-forge
+  libiconv                       1.17          h0d3ecfb_1                   conda-forge
   libjpeg-turbo                  3.0.0         hb547adb_1                   conda-forge
   liblapack                      3.9.0         20_osxarm64_openblas         conda-forge
   libllvm15                      15.0.7        h2621b3d_4                   conda-forge
@@ -147,10 +154,12 @@ List of packages in environment: "/Users/mithras/micromamba/envs/slm"
   lightning-utilities            0.10.0        pyhd8ed1ab_0                 conda-forge
   llvm-openmp                    17.0.6        hcd81f8e_0                   conda-forge
   lz4-c                          1.9.4         hb7217d7_0                   conda-forge
+  markdown-it-py                 3.0.0         pyhd8ed1ab_0                 conda-forge
   markupsafe                     2.1.3         py311heffc1b2_1              conda-forge
   matplotlib                     3.8.2         py311ha1ab1f8_0              conda-forge
   matplotlib-base                3.8.2         py311hfdba5f6_0              conda-forge
   matplotlib-inline              0.1.6         pyhd8ed1ab_0                 conda-forge
+  mdurl                          0.1.0         pyhd8ed1ab_0                 conda-forge
   mistune                        3.0.2         pyhd8ed1ab_0                 conda-forge
   mizani                         0.9.3         pyhd8ed1ab_0                 conda-forge
   mpc                            1.3.1         h91ba8db_0                   conda-forge
@@ -159,6 +168,7 @@ List of packages in environment: "/Users/mithras/micromamba/envs/slm"
   multidict                      6.0.4         py311he2be06e_1              conda-forge
   multiprocess                   0.70.15       py311heffc1b2_1              conda-forge
   munkres                        1.1.4         pyh9f0ad1d_0                 conda-forge
+  murmurhash                     1.0.10        py311ha891d26_1              conda-forge
   nbclient                       0.8.0         pyhd8ed1ab_0                 conda-forge
   nbconvert-core                 7.12.0        pyhd8ed1ab_0                 conda-forge
   nbformat                       5.9.2         pyhd8ed1ab_0                 conda-forge
@@ -179,6 +189,7 @@ List of packages in environment: "/Users/mithras/micromamba/envs/slm"
   pandas                         2.1.4         py311h6e08293_0              conda-forge
   pandocfilters                  1.5.0         pyhd8ed1ab_0                 conda-forge
   parso                          0.8.3         pyhd8ed1ab_0                 conda-forge
+  pathy                          0.10.2        pyhd8ed1ab_0                 conda-forge
   patsy                          0.5.4         pyhd8ed1ab_0                 conda-forge
   pexpect                        4.8.0         pyh1a96a4e_2                 conda-forge
   pickleshare                    0.7.5         py_1003                      conda-forge
@@ -187,6 +198,8 @@ List of packages in environment: "/Users/mithras/micromamba/envs/slm"
   pkgutil-resolve-name           1.3.10        pyhd8ed1ab_1                 conda-forge
   platformdirs                   4.1.0         pyhd8ed1ab_0                 conda-forge
   plotnine                       0.12.4        pyhd8ed1ab_0                 conda-forge
+  pluggy                         1.3.0         pyhd8ed1ab_0                 conda-forge
+  preshed                        3.0.9         py311ha891d26_1              conda-forge
   prometheus_client              0.19.0        pyhd8ed1ab_0                 conda-forge
   prompt-toolkit                 3.0.41        pyha770c72_0                 conda-forge
   psutil                         5.9.5         py311heffc1b2_1              conda-forge
@@ -196,11 +209,13 @@ List of packages in environment: "/Users/mithras/micromamba/envs/slm"
   pyarrow                        14.0.1        py311h637fcfe_9_cpu          conda-forge
   pyarrow-hotfix                 0.6           pyhd8ed1ab_0                 conda-forge
   pycparser                      2.21          pyhd8ed1ab_0                 conda-forge
+  pydantic                       1.10.13       py311h05b510d_1              conda-forge
   pygments                       2.17.2        pyhd8ed1ab_0                 conda-forge
   pyobjc-core                    10.1          py311h665608e_0              conda-forge
   pyobjc-framework-cocoa         10.1          py311h665608e_0              conda-forge
   pyparsing                      3.1.1         pyhd8ed1ab_0                 conda-forge
   pysocks                        1.7.1         pyha2e5f31_6                 conda-forge
+  pytest                         7.4.3         pyhd8ed1ab_0                 conda-forge
   python                         3.11.6        h47c9636_0_cpython           conda-forge
   python-dateutil                2.8.2         pyhd8ed1ab_0                 conda-forge
   python-fastjsonschema          2.19.0        pyhd8ed1ab_0                 conda-forge
@@ -219,6 +234,7 @@ List of packages in environment: "/Users/mithras/micromamba/envs/slm"
   requests                       2.31.0        pyhd8ed1ab_0                 conda-forge
   rfc3339-validator              0.1.4         pyhd8ed1ab_0                 conda-forge
   rfc3986-validator              0.1.1         pyh9f0ad1d_0                 conda-forge
+  rich                           13.7.0        pyhd8ed1ab_0                 conda-forge
   rpds-py                        0.13.2        py311h94f323b_0              conda-forge
   rust                           1.74.1        h4ff7c5d_0                   conda-forge
   rust-std-aarch64-apple-darwin  1.74.1        hf6ec828_0                   conda-forge
@@ -234,16 +250,23 @@ List of packages in environment: "/Users/mithras/micromamba/envs/slm"
   sentencepiece-python           0.1.99        py311h0de698d_5              conda-forge
   sentencepiece-spm              0.1.99        hbe770f4_5                   conda-forge
   setuptools                     68.2.2        pyhd8ed1ab_0                 conda-forge
+  shellingham                    1.5.4         pyhd8ed1ab_0                 conda-forge
   six                            1.16.0        pyh6c4a22f_0                 conda-forge
   sklearn-pandas                 2.2.0         pyhd8ed1ab_0                 conda-forge
   sleef                          3.5.1         h156473d_2                   conda-forge
+  smart_open                     5.2.1         pyhd8ed1ab_0                 conda-forge
   snappy                         1.1.10        h17c5cce_0                   conda-forge
   sniffio                        1.3.0         pyhd8ed1ab_0                 conda-forge
   soupsieve                      2.5           pyhd8ed1ab_1                 conda-forge
+  spacy                          3.7.2         py311hc00d0f6_0              conda-forge
+  spacy-legacy                   3.0.12        pyhd8ed1ab_0                 conda-forge
+  spacy-loggers                  1.0.5         pyhd8ed1ab_0                 conda-forge
+  srsly                          2.4.8         py311ha891d26_1              conda-forge
   stack_data                     0.6.2         pyhd8ed1ab_0                 conda-forge
-  statsmodels                    0.14.0        py311h9ea6feb_2              conda-forge
+  statsmodels                    0.14.0        py311h9ea6feb_3              conda-forge
   sympy                          1.12          pypyh9d50eac_103             conda-forge
   terminado                      0.18.0        pyh31c8845_0                 conda-forge
+  thinc                          8.2.1         py311hddbb800_0              conda-forge
   threadpoolctl                  3.2.0         pyha21a80b_0                 conda-forge
   tinycss2                       1.2.1         pyhd8ed1ab_0                 conda-forge
   tk                             8.6.13        h5083fa2_1                   conda-forge
@@ -257,14 +280,17 @@ List of packages in environment: "/Users/mithras/micromamba/envs/slm"
   tqdm                           4.66.1        pyhd8ed1ab_0                 conda-forge
   traitlets                      5.14.0        pyhd8ed1ab_0                 conda-forge
   transformers                   4.17.0        pyhd8ed1ab_0                 conda-forge
+  typer                          0.9.0         pyhd8ed1ab_0                 conda-forge
   types-python-dateutil          2.8.19.14     pyhd8ed1ab_0                 conda-forge
-  typing-extensions              4.8.0         hd8ed1ab_0                   conda-forge
-  typing_extensions              4.8.0         pyha770c72_0                 conda-forge
+  typing-extensions              4.9.0         hd8ed1ab_0                   conda-forge
+  typing_extensions              4.9.0         pyha770c72_0                 conda-forge
   typing_utils                   0.1.0         pyhd8ed1ab_0                 conda-forge
   tzdata                         2023c         h71feb2d_0                   conda-forge
   uri-template                   1.3.0         pyhd8ed1ab_0                 conda-forge
   urllib3                        2.1.0         pyhd8ed1ab_0                 conda-forge
+  wasabi                         1.1.2         py311h267d04e_0              conda-forge
   wcwidth                        0.2.12        pyhd8ed1ab_0                 conda-forge
+  weasel                         0.3.4         pyhd8ed1ab_0                 conda-forge
   webcolors                      1.13          pyhd8ed1ab_0                 conda-forge
   webencodings                   0.5.1         pyhd8ed1ab_2                 conda-forge
   websocket-client               1.7.0         pyhd8ed1ab_0                 conda-forge
