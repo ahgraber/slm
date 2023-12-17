@@ -1,6 +1,11 @@
 # %%
+import logging
+import os
 from pathlib import Path
 import subprocess
+
+# %%
+logger = logging.getLogger(__name__)
 
 
 # %%
@@ -23,3 +28,25 @@ def torch_device():
         device = torch.device("cpu")
 
     return device
+
+
+# %%
+def init_nltk(model: str = "punkt", savedir: Path = Path(".")):
+    """Ensure NLTK model is downloaded/available."""
+    import nltk
+
+    savedir.mkdir(parents=True, exist_ok=True)
+
+    # specify download dir for nltk by setting NLTK_DATA env var
+    os.environ["NLTK_DATA"] = str(savedir.resolve())
+    nltk.download(model)
+
+
+def init_spacy(model: str = "en_core_web_sm"):
+    """Ensure spaCy model model is downloaded/available."""
+    import spacy
+
+    try:
+        _ = spacy.load(model)
+    except OSError:
+        spacy.cli.download(model)
