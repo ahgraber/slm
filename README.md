@@ -3,7 +3,7 @@
 This represents my goal of training my own transformer-based model following [Andrej Karpathy's Neural Networks: Zero to Hero](https://karpathy.ai/zero-to-hero.html),
 specifically [Let's build GPT: from scratch, in code, spelled out](https://www.youtube.com/watch?v=kCc8FmEb1nY) and [nanoGPT](https://github.com/karpathy/nanoGPT).
 
-> Note: This is not intended to be installed as a package!
+> Note: This is not intended to be production-ready, but rather an investigation of the modern (post-transformer) NLP space.
 
 - [SLM (Small Language Model)](#slm-small-language-model)
   - [Goals](#goals)

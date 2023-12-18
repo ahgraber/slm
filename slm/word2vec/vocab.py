@@ -18,7 +18,13 @@ SEP_TOKEN = "<SEP>"
 class Vocab:
     """Vocabulary must be able to map words:tokens (ids), tokens:words and words:counts.
 
-    Word ids are not immutable; running Vocab.update() may alter the word:id mapping or remove infrequent words from the lexicon.
+    Word ids are not immutable; running Vocab.update() may alter the word:id mapping or remove infrequent words from the lexicon.  This means that Vocab instances must be tightly coupled with their tokenization pipelines.
+
+    Notes
+    -----
+    `counter` is a much more stable representation of the lexicon than `vocab`;
+    words do not get removed `counter` unless `delete` is specifically called,
+    while `vocab` is influenced by both `size` limits and `min_freq` limits.
     """
 
     def __init__(
@@ -59,9 +65,13 @@ class Vocab:
 
         return self.vocab.__contains__(word)
 
-    def __getitem__(self, word: str) -> int:
-        """Return id of given word."""
-        return self.word2id(word)
+    def __getitem__(self, item: Union[int, str]) -> Union[int, str]:
+        """Return word from id or id from word."""
+        match item:
+            case int():
+                return self.id2word(item)
+            case str():
+                return self.word2id(item)
 
     def __sort_counter(self, count_tuples: tuple[str, int]) -> list[tuple[str, int]]:
         """Sort Counter by descending counts, then alphabetically for tiebreaking."""
@@ -71,21 +81,29 @@ class Vocab:
         )
         return sorted_counts
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, int]:
         """Return dict[word, id] of entire vocabulary."""
         return {word: i for i, word in enumerate(self.vocab) if word not in self._infrequent}
 
-    def word2id(self, word: str):
+    def word2id(self, word: str) -> int:
         """Return id of given word."""
-        if word in self._infrequent or word not in self.vocab:
+        if (word in self._infrequent) or (word not in self.vocab):
             logger.debug(f"'{word}' is infrequent, returning `unk` if enabled")
             if self._unk_token:
                 return self.vocab.index(self._unk_token)
+            else:
+                raise ValueError(f"{word} is not in vocab")
 
         return self.vocab.index(word)
 
     def id2word(self, idx: int):
         """Return word of given token id."""
+        if idx > len(self.vocab):
+            if self._unk_token:
+                return self._unk_token
+            else:
+                raise IndexError(f"{idx} out of vocab range")
+
         return self.vocab[idx]
 
     def wordfreq(self, word: str):
@@ -105,13 +123,13 @@ class Vocab:
         `counts` will be added to existing counts, and new words appended to the vocabulary.
         This means that new words may be out of order vs. count frequency index.
         """
-        logging.debug("Updating the vocabulary _will_ alter word:token mapping!")
+        logging.warning("Updating the vocabulary will alter word:token mapping!")
         self.counter.update(counts)
         self._update_vocab()
 
     def delete(self, word):
         """Delete word from vocabulary."""
-        logging.debug("Deleting a word from the vocabulary _will_ alter word:token mapping!")
+        logging.warning("Deleting a word from the vocabulary _will_ alter word:token mapping!")
         _ = self.counter.pop(word)
         self._update_vocab()
 

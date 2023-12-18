@@ -122,15 +122,25 @@ class SentencePreTokenizer:
 
 
 # %%
-# prenorm = normalizers.Replace(Regex(r"[\p{Other}&&[^\n\t\r]]"), "\n")  # normalize control chars
-# presplit = pre_tokenizers.PreTokenizer.custom(SentencePreTokenizer())  # use nltk punkt sentence splitter
+prenormalizer = normalizers.Replace(Regex(r"[\p{Other}&&[^\n\t\r]]"), "\n")  # normalize control chars
+sentence_splitter = pre_tokenizers.PreTokenizer.custom(SentencePreTokenizer())  # use nltk punkt sentence splitter
+normalizer = normalizers.Sequence(
+    [
+        normalizers.NFKD(),
+        normalizers.StripAccents(),
+        normalizers.Lowercase(),
+        normalizers.Replace(Regex(r"[\p{Other}&&[^\n\t\r]]"), ""),  # normalize control chars
+        normalizers.Replace(Regex(r"[\s]"), " "),  # normalize whitespace
+    ]
+)
+word_splitter = pre_tokenizers.Whitespace()
 
 
 def blob_to_sentences(
     blob: str,
-    is_wiki: bool,
-    normalizer: normalizers.Normalizer,
-    splitter: pre_tokenizers.PreTokenizer,
+    is_wiki: bool = False,
+    normalizer: normalizers.Normalizer = prenormalizer,
+    splitter: pre_tokenizers.PreTokenizer = sentence_splitter,
 ) -> list[str]:
     """Split blob into sentences.
 
@@ -150,8 +160,8 @@ def all_punctuation(s: str):
 
 def sentences_to_words(
     sentences: list[str],
-    normalizer: normalizers.Normalizer,
-    splitter: pre_tokenizers.PreTokenizer,
+    normalizer: normalizers.Normalizer = normalizer,
+    splitter: pre_tokenizers.PreTokenizer = word_splitter,
 ) -> list[list[str]]:
     """Apply standard text normalization and split into words."""
     words = []

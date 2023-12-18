@@ -40,14 +40,14 @@ I DO NOT LIKE GREEN EGGS AND HAM.
 I DO NOT LIKE THEM, SAM-I-AM.
 
 WOULD YOU LIKE THEM IN A HOUSE?
-WOULD YOU LIKE THEN WITH A MOUSE?
+WOULD YOU LIKE THEM WITH A MOUSE?
 
 I DO NOT LIKE THEM IN A HOUSE.
 I DO NOT LIKE THEM WITH A MOUSE.
 I DO NOT LIKE THEM HERE OR THERE.
 I DO NOT LIKE THEM ANYWHERE.
 I DO NOT LIKE GREEN EGGS AND HAM.
-I DO NOT LIKE THEM, SAM-I-AM.
+I DO NOT LIKE THEM, SAM-I-AM!
 """
     return " ".join(text.splitlines())
 
@@ -88,10 +88,9 @@ class TestVocab:
         assert len(v) == len(v.vocab) != len(v.counter)
 
         # token ids should be deterministic
-        unk_id = 0
-        assert v.word2id(UNK_TOKEN) == unk_id
-        assert v[UNK_TOKEN] == unk_id
-        assert v.id2word(unk_id) == UNK_TOKEN
+        tok_id = 0
+        assert (v.word2id(UNK_TOKEN) == tok_id) and (v.id2word(tok_id) == UNK_TOKEN)
+        assert (v[UNK_TOKEN] == tok_id) and (v[tok_id] == UNK_TOKEN)
 
     @pytest.mark.parametrize(
         "v",
@@ -112,10 +111,9 @@ class TestVocab:
         assert len(v) == len(v.vocab) != len(v.counter)
 
         # token ids should be deterministic
-        sep_id = 1 if v._unk_token else 0
-        assert v.word2id(SEP_TOKEN) == sep_id
-        assert v[SEP_TOKEN] == sep_id
-        assert v.id2word(sep_id) == SEP_TOKEN
+        tok_id = 1 if v._unk_token else 0
+        assert (v.word2id(SEP_TOKEN) == tok_id) and (v.id2word(tok_id) == SEP_TOKEN)
+        assert (v[SEP_TOKEN] == tok_id) and (v[tok_id] == SEP_TOKEN)
 
     @pytest.mark.parametrize(
         "v",
@@ -126,50 +124,69 @@ class TestVocab:
             Vocab(unk_token=UNK_TOKEN, sep_token=SEP_TOKEN),
         ],
     )
-    def test_lookups(self, text, counter, v):
+    def test_lookups(self, counter, v):
         v.update(counter)
         # 'like' is most-frequent, has index of 0 + n_specials
-        assert v["LIKE"] == v.word2id("LIKE") == 0 + len(v._specials)
-        assert v.id2word(0 + len(v._specials)) == "LIKE"
+        tok_id = 0 + len(v._specials)
+        assert tok_id == v["LIKE"] == v.word2id("LIKE") == v[v[tok_id]]
+        assert "LIKE" == v[tok_id] == v.id2word(tok_id) == v[v["LIKE"]]
 
-        for word in ["LIKE", "SAM", "GREEN"]:
-            assert v.wordfreq(word) == text.count(word)
+    def test_size_gt_n_words(self, counter):
+        v = Vocab(counter, size=1_000, min_freq=1, unk_token=None, sep_token=None)
 
-    @pytest.mark.parametrize("size", [6, 15, 30])
-    def test_size(self, counter, size):
-        v = Vocab(counter=counter, size=size, unk_token=None, sep_token=None)
+        # len(counter) is ground truth (un-truncated) length
+        assert len(counter) == len(v.counter) == len(v.vocab) == len(v)
+        assert v.vocab[-1] == min(v.counter)
 
-        # assert len(counter) == 27
-        if size < len(counter):
-            assert len(v.vocab) == size
-        else:
-            assert len(v.vocab) == len(counter)
+        # least frequent word must exist in counter and be accessible via lookups
+        assert counter["!"] == v.counter["!"]
+        assert v["!"] == v[v[-1]] == v[v.vocab[-1]]  # id == id
+        assert v[v["!"]] == v[-1] == v.vocab[-1] == v[len(v.vocab) - 1]  # word == word
+        with pytest.raises(IndexError):
+            v[v.size]  # size > len(v.vocab)
+
+    def test_size_lt_n_words(self, counter, size=10):
+        v = Vocab(counter, size=size, min_freq=1, unk_token=None, sep_token=None)
+
+        # len(counter) is ground truth (un-truncated) length
+        assert len(counter) == len(v.counter)
+        assert size == v.size == len(v) == len(v.vocab)
+        assert len(v.counter) > len(v.vocab)  # counter is > truncated vocab
+
+        # least frequent word must exist in counter, but _not_ accessible via lookups
+        assert counter["!"] == v.counter["!"]
+        assert v[-1] == v.vocab[-1] == v[v.size - 1] == v.vocab[v.size - 1]  # last item in vocab is idx size-1
+        assert v[v[-1]] == v[v.vocab[-1]] == v[v[v.size - 1]] == v[v.vocab[v.size - 1]]
+        with pytest.raises(ValueError):
+            v["!"]  # truncated, error bc no unk_token
+        with pytest.raises(IndexError):
+            v[len(v.counter)]
 
     @pytest.mark.parametrize("min_freq", [2, 6, 30])
     def test_min_freq(self, counter, min_freq):
-        v = Vocab(counter=counter, min_freq=min_freq)
+        v = Vocab(counter=counter, min_freq=min_freq, unk_token=None, sep_token=None)
 
         # assert len(counter) == 27
         if min_freq == 2:
-            assert len(v._infrequent) == len([word for word, count in v.counter.items() if count < min_freq])
-            assert "THEN" in v._infrequent
+            assert len(v._infrequent) == len([word for word, count in v.counter.items() if count < v.min_freq])
+            assert "!" in v._infrequent
         if min_freq == 6:
-            assert len(v._infrequent) == len([word for word, count in v.counter.items() if count < min_freq])
+            assert len(v._infrequent) == len([word for word, count in v.counter.items() if count < v.min_freq])
             assert all(
                 word in v._infrequent
                 for word in [
-                    "THEN",  # 1
+                    "!",  # 1
                     "HERE",  # 3
                     "EGGS",  # 4
                     "WOULD",  # 5
                 ]
             )
         if min_freq == 30:
-            assert len(v._infrequent) == len(counter)
+            assert len(v._infrequent) == len(v.counter)
             assert all(
                 word in v._infrequent
                 for word in [
-                    "THEN",  # 1
+                    "!",  # 1
                     "EGGS",  # 4
                     "WOULD",  # 5
                     "THEM",  # 11
@@ -178,9 +195,8 @@ class TestVocab:
             )
 
     def test_update(self, counter):
-        v1 = Vocab(counter)
-
-        v2 = Vocab(counter)
+        v1 = Vocab(counter, min_freq=1, unk_token=None, sep_token=None)
+        v2 = Vocab(counter, min_freq=1, unk_token=None, sep_token=None)
         v2.update(Counter(["I"] * 99))
 
         # check that counter and vocab have updated
@@ -190,10 +206,31 @@ class TestVocab:
         # check that index has shifted
         assert v1["I"] > v2["I"]
 
-    def test_delete(self, counter):
-        v = Vocab(counter)
+    def test_delete_no_specials(self, counter):
+        v = Vocab(counter, min_freq=1, unk_token=None, sep_token=None)
         like_idx = v["LIKE"]
-        then_idx = v["THEN"]
+        excl_idx = v["!"]
+
+        # confirm exists
+        word = "I"
+        assert word in v.counter
+        assert word in v.vocab
+        assert word in v
+
+        v.delete("I")
+        assert word not in v.counter
+        assert word not in v.vocab
+        assert word not in v
+        with pytest.raises(ValueError):
+            v[word]
+
+        assert like_idx == v["LIKE"]  # indices of words more frequent than deleted do not change
+        assert excl_idx != v["!"]  # indices of words less frequent than deleted _do_ change
+
+    def test_delete_with_specials(self, counter):
+        v = Vocab(counter, min_freq=1, unk_token=UNK_TOKEN, sep_token=SEP_TOKEN)
+        like_idx = v["LIKE"]
+        excl_idx = v["!"]
 
         # confirm exists
         word = "I"
@@ -208,7 +245,7 @@ class TestVocab:
         assert v[word] == v[UNK_TOKEN]
 
         assert like_idx == v["LIKE"]  # indices of words more frequent than deleted do not change
-        assert like_idx != v["THEN"]  # indices of words less frequent than deleted _do_ change
+        assert excl_idx != v["!"]  # indices of words less frequent than deleted _do_ change
 
 
 # %%
