@@ -12,14 +12,14 @@ import sys
 from typing import Any, Callable, Iterable, Optional, Union
 import unicodedata
 
-import nltk
 import pytest
-import spacy
 from tqdm import tqdm
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__ + "/../src").resolve()))
+import nltk
+import spacy
+
 from slm.word2vec.vocab import SEP_TOKEN, UNK_TOKEN, Vocab  # NOQA: E402
 
 

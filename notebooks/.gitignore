@@ -1,2 +1,4 @@
 # allow adding html notebook outputs to git
+.*
+!.git*
 !*.html

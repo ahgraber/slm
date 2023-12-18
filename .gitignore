@@ -51,8 +51,7 @@ writeup/**
 *.rdb
 
 # Keep these files, even if ignored above
-!.gitkeep
-!.gitignore
+!.git*
 !.ci/
 !data/processed/**/*.zip
 !notebooks/*.py

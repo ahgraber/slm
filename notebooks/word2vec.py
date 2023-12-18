@@ -6,6 +6,7 @@ import logging
 import math
 import os
 from pathlib import Path
+import pickle
 import random
 import re
 import string
@@ -14,6 +15,21 @@ from typing import Any, Callable, Iterable, Optional, Union
 import unicodedata
 
 import nltk
+
+# from torchtext.vocab import Vocab, build_vocab_from_iterator
+# may have to include `.env` file at project root containing `PYTHONPATH="./../src"`
+# sys.path.insert(0, str(Path(__file__ + "/../../src").resolve()))
+from slm.preprocess import (  # NOQA: E402
+    SentencePreTokenizer,
+    blob_to_sentences,
+    pipeline,
+    sentences_to_words,
+    wiki_remove_headings,
+    wiki_truncate_appedices,
+)
+from slm.utils import flatten, get_project_root, init_nltk, init_spacy  # NOQA: E402
+from slm.word2vec.config import W2VConfig  # NOQA: E402
+from slm.word2vec.vocab import Vocab  # NOQA: E402
 import spacy
 from tqdm import tqdm
 
@@ -25,14 +41,6 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torchtext.data.utils import get_tokenizer
-
-# from torchtext.vocab import Vocab, build_vocab_from_iterator
-# may have to include `.env` file at project root containing `PYTHONPATH="./../src"`
-sys.path.insert(0, str(Path(__file__ + "/../../src").resolve()))
-from slm.preprocess import SentencePreTokenizer, pipeline  # NOQA: E402
-from slm.utils import flatten, get_project_root, init_nltk, init_spacy  # NOQA: E402
-from slm.word2vec.config import W2VConfig  # NOQA: E402
-from slm.word2vec.vocab import Vocab  # NOQA: E402
 
 # %%
 logger = logging.getLogger(__name__)
@@ -72,6 +80,12 @@ init_spacy(model="en_core_web_sm")
 # or even use an IterableDataset to lazily apply transformations as needed
 
 # %%
+dslist = [
+    ("bookcorpus", None),
+    ("c4", "realnewslike"),
+    ("wikimedia/wikisource", "20231201.en"),
+    # ("wikimedia/wikipedia", "20231101.en"),
+]
 # wiki = datasets.load_dataset(
 #     "wikimedia/wikipedia",
 #     name="20231101.en",
@@ -105,11 +119,12 @@ init_spacy(model="en_core_web_sm")
 # %%
 ds_kwargs = {
     "split": "train",
-    # "download_mode": "reuse_cache_if_exists", # for testing
-    "download_mode": "reuse_dataset_if_exists",  # for prod
-    "verification_mode": "basic_checks",
-    "streaming": True,
-    # "num_proc":8,  # only if streaming == False
+    "download_mode": "force_redownload",  # if corrupted
+    # "download_mode": "reuse_cache_if_exists",  # for testing
+    # "download_mode": "reuse_dataset_if_exists",  # for prod
+    # "verification_mode": "basic_checks",
+    "verification_mode": "all_checks",
+    "num_proc": 8,  # only if streaming == False
 }
 key = "text"
 
@@ -117,16 +132,17 @@ key = "text"
 wiki = datasets.load_dataset(
     "wikimedia/wikipedia",
     name="20231101.en",
-    cache_dir=DATA_DIR / "wikipedia",
+    # data_dir=DATA_DIR / "wikipedia",
+    # cache_dir=DATA_DIR / "wikipedia",
     **ds_kwargs,
 )
-wiki_len = (
-    datasets.load_dataset_builder("wikimedia/wikipedia", "20231101.en").info.splits[ds_kwargs["split"]].num_examples
-)
+# wiki_len = (
+#     datasets.load_dataset_builder("wikimedia/wikipedia", "20231101.en").info.splits[ds_kwargs["split"]].num_examples
+# )
 # %%
-# wiki = wiki.to_iterable_dataset()
+wiki = wiki.to_iterable_dataset()
 wiki = wiki.select_columns(key)
-# wiki = wiki.shuffle(SEED)
+# wiki = wiki.shuffle(SEED, buffer=10000)
 # if isinstance(wiki, datasets.Dataset):
 #     wiki = wiki.flatten_indices()
 
@@ -180,21 +196,33 @@ tokenizer.processor = processors.TemplateProcessing(  # add separators
 # https://huggingface.co/docs/datasets/main/en/about_map_batch#map
 
 # wrap preprocessing fn in partial so its only input is a list of text as a positional arg
-preprocessor = partial(
+preprocess = partial(
     pipeline,
     key=key,
+    fn=blob_to_sentences,
     b2s_kwargs={"is_wiki": True, "normalizer": prenormalizer, "splitter": sentence_splitter},
+)
+tokenize = partial(
+    pipeline,
+    key=key,
+    fn=sentences_to_words,
     s2w_kwargs={"normalizer": tokenizer.normalizer, "splitter": tokenizer.pre_tokenizer},
 )
+# TODO: split pipeline into 2 -
+# 1. needs to do wiki cleaning, split into sentences
+# 2. applies standard normalization and splits into words
+# we need 1 for both vocab and tokenization pipelines
+# while 2 is only needed for vocab (it _is_ the tokenization pipeline)
 
 # if wiki is iterabledataset, preprocessor executes only as batch is called
-batch_size = 32
-wiki = wiki.map(preprocessor, input_columns=key, batched=True, batch_size=batch_size)
+batch_size = 1000
+wiki = wiki.map(preprocess, input_columns=key, batched=True, batch_size=batch_size)
+wiki = wiki.map(tokenize, input_columns=key, batched=True, batch_size=batch_size)
 
 # %%
 ds = iter(wiki)
 counter = Counter()
-for blob in tqdm(ds, total=math.ceil(wiki_len / batch_size)):
+for blob in tqdm(ds, total=wiki_len):
     counter.update(flatten(blob[key]))
 else:
     print("Done")
@@ -202,6 +230,8 @@ else:
 # %%
 counter
 
+# %%
+# NOTE: stalls on 560417
 
 # %%
 vocab = Vocab()
@@ -209,10 +239,8 @@ vocab.update(counter)
 
 
 # %%
-import pickle
-
-with (DATA_DIR / "vocab").open("wb") as f:
-    pickle.dump(f, vocab)
+with (DATA_DIR / "wiki_vocab.pkl").open("wb") as f:
+    pickle.dump(vocab, f)
 
 # %%
 
@@ -225,7 +253,7 @@ with (DATA_DIR / "vocab").open("wb") as f:
 # %%
 books = datasets.load_dataset(
     "bookcorpus",
-    cache_dir=DATA_DIR / "bookcorpus",
+    # cache_dir=DATA_DIR / "bookcorpus",
     **ds_kwargs,
 )
 books_len = datasets.load_dataset_builder("bookcorpus").info.splits[ds_kwargs["split"]].num_examples
@@ -234,7 +262,7 @@ books_len = datasets.load_dataset_builder("bookcorpus").info.splits[ds_kwargs["s
 c4 = datasets.load_dataset(
     "c4",
     name="realnewslike",  # "en"
-    cache_dir=DATA_DIR / "c4",
+    # cache_dir=DATA_DIR / "c4",
     **ds_kwargs,
 )
 c4_len = datasets.load_dataset_builder("c4", "realnewslike").info.splits[ds_kwargs["split"]].num_examples
@@ -242,7 +270,7 @@ c4_len = datasets.load_dataset_builder("c4", "realnewslike").info.splits[ds_kwar
 
 # %%
 
-# %%
+# %%s
 
 # %% [markdown]
 # ## Tokenize

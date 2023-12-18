@@ -51,33 +51,6 @@ dev = [
 [project.urls]
 "repository" = "https://github.com/ahgraber/slm"
 
-# ref: https://hatch.pypa.io/1.2/version/#configuration
-[tool.hatch.version]
-path = "./src/VERSION"
-pattern = "^(?P<version>.+?)(\n)"
-
-[tool.hatch.build]
-only-include = [
-  "./src/VERSION",
-  "src/slm",
-  "tests",
-]
-skip-excluded-dirs = true
-# sources = ["src"]
-
-[tool.hatch.build.targets.sdist]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/slm"]
-macos-max-compat = true
-
-# --- build-system -----------------------------------------------------------
-# ref: https://packaging.python.org/en/latest/tutorials/packaging-projects/
-# these should match the "setup-requires" packages in `setup.cfg`
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 # --- ruff -------------------------------------------------------------------
 [tool.ruff]
 # Assumed Python version
@@ -197,12 +170,12 @@ force-sort-within-sections = true
 # force-wrap-aliases = true  # incompatible with formatter
 relative-imports-order = "closest-to-furthest"
 
-# known-first-party = ["ds_utils"]
-known-local-folder = ["src"] # for relative imports
-section-order = ["future", "standard-library", "third-party", "sci", "torch", "plot", "pmi", "first-party", "local-folder"]
+known-local-folder = ["slm"] # for relative imports
+section-order = ["future", "standard-library", "third-party", "sci", "nlp", "torch", "plot", "first-party", "local-folder"]
 
 [tool.ruff.isort.sections]
 "sci" = ["numpy", "pandas", "scipy", "sklearn", "statsmodels", "xgboost"]
+"nlp" = ["gensim", "nltk", "spacy"]
 "torch" = ["datasets", "lightning", "torch", "torchaudio", "torchmetrics", "torchtext", "torchvision", "tokenizers", "transformers", "semantic_kernel"]
 "plot" = ["cmcrameri", "matplotlib", "plotly", "plotnine", "seaborn"]
 
