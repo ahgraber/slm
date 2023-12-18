@@ -3,6 +3,7 @@ import logging
 import os
 from pathlib import Path
 import subprocess
+from typing import Iterable
 
 # %%
 logger = logging.getLogger(__name__)
@@ -50,3 +51,15 @@ def init_spacy(model: str = "en_core_web_sm"):
         _ = spacy.load(model)
     except OSError:
         spacy.cli.download(model)
+
+
+# %%
+def flatten(iterable: Iterable):
+    """Flatten arbitrarily nested iterable to lowest level."""
+    for i in iterable:
+        if isinstance(i, (str, bytes)):
+            yield i
+        elif isinstance(i, Iterable):
+            yield from flatten(i)
+        else:
+            raise TypeError(f"iterable was unexpected type {type(iterable)}")

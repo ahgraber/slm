@@ -161,8 +161,12 @@ def sentences_to_words(
     return words
 
 
-def pipeline(batch: list[str], key: str, b2s_kwargs: dict, s2w_kwargs: dict) -> dict[str, list[list[str]]]:
+def pipeline(
+    batch: list[str],
+    key: str,
+    fn: Callable,
+    kwargs: dict,
+) -> dict[str, list[list[str]]]:
     """Wrapper function for preprocessing pipeline."""
-    batch = [blob_to_sentences(blob, **b2s_kwargs) for blob in batch]
-    batch = [sentences_to_words(sentences, **s2w_kwargs) for sentences in batch]
+    batch = [fn(blob, **kwargs) for blob in batch]
     return {key: batch}
