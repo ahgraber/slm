@@ -7,7 +7,7 @@ from typing import Optional, Union
 logger = logging.getLogger(__name__)
 
 # %%
-VOCAB_SIZE = 40_000
+VOCAB_SIZE = 60_000
 VOCAB_MIN_FREQ = 3
 UNK_TOKEN = "<UNK>"
 SEP_TOKEN = "<SEP>"
