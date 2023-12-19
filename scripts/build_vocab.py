@@ -76,6 +76,13 @@ if __name__ == "__main__":
     save_prefix = f"{dataset}_{name}" if name else f"{dataset}"
     save_path = args.save_path if args.save_path is not None else Path(ARTIFACT_DIR / f"{save_prefix}_vocab.pkl")
 
+    if save_path.exists():
+        print("File exists at save path.  Continuing will overwrite existing file.")
+        prompt = str(input("Continue? [y/N]  "))
+        if prompt.lower() not in ["y", "yes"]:
+            print("Exiting at user request.")
+            SystemExit()
+
     ds_kwargs = {
         # "download_mode": "force_redownload",  # if corrupted
         "download_mode": "reuse_cache_if_exists",
