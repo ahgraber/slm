@@ -139,18 +139,18 @@ if __name__ == "__main__":
     ds = ds.map(preprocess, input_columns=key, batched=True, batch_size=batch_size)
     ds = ds.map(tokenize, input_columns=key, batched=True, batch_size=batch_size)
 
-    logging.info("Begin processing dataset & counting...")
+    logger.info("Begin processing dataset & counting...")
     iterds = iter(ds)
     counter = Counter()
     for blob in tqdm(iterds, total=ds_len):
         counter.update(flatten(blob[key]))
     else:
-        logging.info("Counting complete")
+        logger.info("Counting complete")
 
-    logging.info("Creating vocab...")
+    logger.info("Creating vocab...")
     vocab = Vocab(counter)
-    logging.info("Saving vocab...")
+    logger.info("Saving vocab...")
     with save_path.open("wb") as f:
         pickle.dump(vocab, f)
 
-    logging.info("Process complete.")
+    logger.info("Process complete.")

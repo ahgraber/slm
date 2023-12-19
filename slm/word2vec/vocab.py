@@ -1,12 +1,10 @@
 # %%
-from collections import Counter, OrderedDict
-import itertools
+from collections import Counter
 import logging
-from typing import Iterable, Optional, Union
+from typing import Optional, Union
 
 # %%
 logger = logging.getLogger(__name__)
-
 
 # %%
 VOCAB_SIZE = 40_000
@@ -30,8 +28,8 @@ class Vocab:
     def __init__(
         self,
         counter: Optional[Counter] = None,
-        size: Optional[int] = 40_000,
-        min_freq: Optional[int] = 3,
+        size: Optional[int] = VOCAB_SIZE,
+        min_freq: Optional[int] = VOCAB_MIN_FREQ,
         unk_token: Optional[str] = UNK_TOKEN,
         sep_token: Optional[str] = None,
     ):
@@ -82,7 +80,7 @@ class Vocab:
         return sorted_counts
 
     def to_dict(self) -> dict[str, int]:
-        """Return dict[word, id] of entire vocabulary."""
+        """Return {word: id} for entire vocabulary of len `size` and with at least `min_freq` counts."""
         return {word: i for i, word in enumerate(self.vocab) if word not in self._infrequent}
 
     def word2id(self, word: str) -> int:
@@ -132,29 +130,3 @@ class Vocab:
         logging.warning("Deleting a word from the vocabulary _will_ alter word:token mapping!")
         _ = self.counter.pop(word)
         self._update_vocab()
-
-
-# %%
-# def build_vocab(corpus: Iterable[str], **kwargs):
-#     """Build Vocab from corpus (list of tokens).
-
-#     Parameters
-#     ----------
-#     corpus: Iterable
-#         Must yield list or iterator of tokens.
-
-#     Returns
-#     -------
-#     vocab: Vocab
-#     """
-#     counter = Counter(*itertools.chain.from_iterable(corpus))
-#     # counter = Counter()
-
-#     # vocab = build_vocab_from_iterator(
-#     #     yield_tokens(wiki, key),
-#     #     **merge_kwargs,
-#     # )
-#     # vocab.set_default_index(vocab["<unk>"])
-#     vocab = Vocab(counter=counter, **kwargs)
-
-#     return vocab
