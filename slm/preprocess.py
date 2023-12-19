@@ -127,7 +127,12 @@ normalizer = normalizers.Sequence(
         normalizers.Replace(Regex(r"[\s]"), " "),  # normalize whitespace
     ]
 )
-word_splitter = pre_tokenizers.Whitespace()
+word_splitter = pre_tokenizers.Sequence(
+    [
+        pre_tokenizers.Whitespace(),
+        pre_tokenizers.Punctuation(),
+    ]
+)
 
 
 def blob_to_sentences(
@@ -147,11 +152,6 @@ def blob_to_sentences(
     return [sentence for sentence, _span in splitter.pre_tokenize_str(blob)]
 
 
-def all_punctuation(s: str):
-    """Return True if string contains only punctuation."""
-    return all(ch in string.punctuation for ch in s)
-
-
 def sentences_to_words(
     sentences: list[str],
     normalizer: normalizers.Normalizer = normalizer,
@@ -161,7 +161,7 @@ def sentences_to_words(
     words = []
     for sentence in sentences:
         sentence = normalizer.normalize_str(sentence)
-        words.append([word for word, _span in splitter.pre_tokenize_str(sentence) if not all_punctuation(word)])
+        words.append([word for word, _span in splitter.pre_tokenize_str(sentence)])
     return words
 
 
