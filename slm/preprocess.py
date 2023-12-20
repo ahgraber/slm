@@ -27,52 +27,6 @@ nlp.enable_pipe("senter")  # fast sentence segmentation without dependency parse
 
 
 # %%
-# we know wikipedia layout schema; we can remove any 'see also' links and references
-# https://en.wikipedia.org/wiki/Wikipedia:Manual_of_Style/Layout#Standard_appendices_and_footers
-WIKI_APPENDICES = [
-    "Gallery",
-    "See [Aa]lso",
-    "Notes and [Rr]eferences",
-    "Notes",
-    "Endnotes",
-    "Foot[Nn]otes",
-    "Works [Cc]ited",
-    "References",
-    "Sources",
-    "Citations",
-    "Bibliography",
-    "Further [Rr]eading",
-    "External [Ll]inks",
-]
-
-
-def wiki_truncate_appedices(article: str) -> str:
-    """Remove standard wikipedia appendices from article blob."""
-    for heading in WIKI_APPENDICES:
-        match = re.search(heading + r"\s\n", article)
-        if match:
-            article = article[: match.start()]
-
-    return article
-
-
-# this is wikipedia - we can remove headings that are more easily identified now in sentnce form
-def wiki_remove_headings(article: str) -> str:
-    """Remove headings.
-
-    Headings defined as spans of 1-5 words between newlines without punctuation.
-    """
-    heading = re.compile(
-        r"""[\n\r]{1}            # match single newline/carriage return
-            \ *(\w+\ ?){1,5}\ *  # match 1-5 words, with optional preceeding/succeeding space
-            [\n\r]{1}            # match single newline/carriage return
-        """,
-        re.X,
-    )
-    return heading.sub("\n\n", article)
-
-
-# %%
 # pre-token splitting (sentences)
 # ref: https://github.com/huggingface/tokenizers/blob/v0.15.0/bindings/python/py_src/tokenizers/__init__.pyi
 # use [spacy](https://spacy.io/) or [stanza](https://stanfordnlp.github.io/stanza/)
@@ -135,29 +89,23 @@ word_splitter = pre_tokenizers.Sequence(
 )
 
 
-def blob_to_sentences(
+def parse_sentences(
     blob: str,
-    is_wiki: bool = False,
-    normalizer: normalizers.Normalizer = prenormalizer,
     splitter: pre_tokenizers.PreTokenizer = sentence_splitter,
 ) -> list[str]:
     """Split blob into sentences.
 
     If dataset is wikipedia, remove appendices and headings.
     """
-    blob = normalizer.normalize_str(blob)
-    if is_wiki:
-        blob = wiki_truncate_appedices(blob)
-        blob = wiki_remove_headings(blob)
     return [sentence for sentence, _span in splitter.pre_tokenize_str(blob)]
 
 
-def sentences_to_words(
+def parse_words(
     sentences: list[str],
     normalizer: normalizers.Normalizer = normalizer,
     splitter: pre_tokenizers.PreTokenizer = word_splitter,
 ) -> list[list[str]]:
-    """Apply standard text normalization and split into words."""
+    """Apply standard text normalization and split sentences into words."""
     words = []
     for sentence in sentences:
         sentence = normalizer.normalize_str(sentence)
@@ -165,11 +113,11 @@ def sentences_to_words(
     return words
 
 
-def pipeline(
+def batch_map(
     batch: list[str],
     key: str,
     fn: Callable,
-    kwargs: dict,
+    **kwargs,
 ) -> dict[str, list[list[str]]]:
     """Wrapper function for preprocessing pipeline."""
     batch = [fn(blob, **kwargs) for blob in batch]
