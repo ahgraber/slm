@@ -57,12 +57,12 @@ repos:
       - id: fix-ligatures
         stages: [commit]
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: "v4.0.0-alpha.3-1"
+    rev: "v3.1.0"
     hooks:
       - id: prettier
         stages: [commit]
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: "v0.37.0"
+    rev: "v0.38.0"
     hooks:
       - id: markdownlint
         args: ["-f"]
@@ -80,16 +80,12 @@ repos:
   #       args: [--mapping, '2', --sequence, '4', --offset, '2', --preserve-quotes]
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: "v0.1.7"
+    rev: "v0.1.8"
     hooks:
       - id: ruff
         args: [--fix]
         stages: [commit, manual]
-
-  - repo: https://github.com/psf/black
-    rev: "23.11.0"
-    hooks:
-      - id: black
+      - id: ruff-format
         stages: [commit, manual]
 
   - repo: https://github.com/petalmd/dockerfile-pre-commit
@@ -103,13 +99,14 @@ repos:
   ### in order for typos pre-commit hook to read it.
   ### In this case, comment out this block until ".typos.toml" has been committed successfully
   - repo: https://github.com/crate-ci/typos
-    rev: v1.16.24
+    rev: v1.16.25
     hooks:
       - id: typos
         # args: []
         args: ["--config", ".typos.toml"]
         exclude: |
           (?x)^(
-            ^.*(typos\.toml)$
+            ^.*(typos\.toml)$ |
+            ^conda\-spec\.txt$
           )$
         stages: [commit]

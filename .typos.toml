@@ -24,7 +24,9 @@ locale = "en"
 
 ## Custom uncorrectable sections (e.g. markdown code fences, PGP signatures, etc)
 ## list of regexes
-extend-ignore-re = []
+extend-ignore-re = [
+    "\\[Rr\\]eferences",
+]
 
 ## Pattern-match always-valid identifiers
 ## list of regexes
@@ -45,7 +47,7 @@ AKS = "AKS"
 [default.extend-words]
 keypair = "keypair"
 mape = "mape"
-
+collapsers = "collapsers"
 
 ## Specific rules for lockfiles
 [type.lock]
