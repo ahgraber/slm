@@ -231,7 +231,7 @@ assess_activations(
 
 
 # %% [markdown]
-# ##### Xavier initalization
+# ##### Xavier initialization
 #
 # 1. scales weights based on neurons in network
 
@@ -254,7 +254,7 @@ plot_derivative(ax, relu, x)
 plt.show()
 
 # %% [markdown]
-# ##### Xavier initalization
+# ##### Xavier initialization
 #
 # 1. Deep layers rapidly tend to 0 (half the positive neurons each time)
 
@@ -269,7 +269,7 @@ assess_activations(
 
 
 # %% [markdown]
-# ##### Xavier initalization (fixed for ReLU)
+# ##### Xavier initialization (fixed for ReLU)
 # 2. Scale Xavier initialization by 2 to account to ^
 
 # %%
