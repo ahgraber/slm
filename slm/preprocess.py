@@ -1,7 +1,6 @@
 # %%
+from itertools import chain
 import logging
-import re
-import string
 from typing import Callable, Optional, Union
 
 from nltk.tokenize import PunktSentenceTokenizer
@@ -14,6 +13,8 @@ from tokenizers import (
     normalizers,
     pre_tokenizers,
 )
+
+from slm.utils import flatten
 
 # %%
 logger = logging.getLogger(__name__)
@@ -41,7 +42,10 @@ class SentencePreTokenizer:
     presplit = pre_tokenizers.PreTokenizer.custom(SentencePreTokenizer(sentence_tokenizer=nlp))  ```
     """
 
-    def __init__(self, sentence_tokenizer: Optional[Union[PunktSentenceTokenizer, spacy.Language]] = None):
+    def __init__(
+        self,
+        sentence_tokenizer: Optional[Union[PunktSentenceTokenizer, spacy.Language]] = None,
+    ):
         self.splitter = sentence_tokenizer if sentence_tokenizer else PunktSentenceTokenizer()
 
     def nltk_split(self, i: int, normalized_string: NormalizedString) -> list[NormalizedString]:
@@ -71,7 +75,6 @@ class SentencePreTokenizer:
 
 # %%
 prenormalizer = normalizers.Replace(Regex(r"[\p{Other}&&[^\n\t\r]]"), "\n")  # normalize control chars
-sentence_splitter = pre_tokenizers.PreTokenizer.custom(SentencePreTokenizer())  # use nltk punkt sentence splitter
 normalizer = normalizers.Sequence(
     [
         normalizers.NFKD(),
@@ -81,6 +84,11 @@ normalizer = normalizers.Sequence(
         normalizers.Replace(Regex(r"[\s]"), " "),  # normalize whitespace
     ]
 )
+nltk_sentence_splitter = pre_tokenizers.PreTokenizer.custom(
+    SentencePreTokenizer(sentence_tokenizer=PunktSentenceTokenizer())
+)
+spacy_sentence_splitter = pre_tokenizers.PreTokenizer.custom(SentencePreTokenizer(sentence_tokenizer=nlp))
+
 word_splitter = pre_tokenizers.Sequence(
     [
         pre_tokenizers.Whitespace(),
@@ -90,27 +98,26 @@ word_splitter = pre_tokenizers.Sequence(
 
 
 def parse_sentences(
-    blob: str,
-    splitter: pre_tokenizers.PreTokenizer = sentence_splitter,
+    record: str,
+    normalizer: normalizers.Normalizer = normalizer,
+    splitter: pre_tokenizers.PreTokenizer = spacy_sentence_splitter,
 ) -> list[str]:
-    """Split blob into sentences.
-
-    If dataset is wikipedia, remove appendices and headings.
-    """
-    return [sentence for sentence, _span in splitter.pre_tokenize_str(blob)]
+    """Apply standard text normalization and split blob into sentences."""
+    record = normalizer.normalize_str(record)
+    return [sentence for sentence, _span in splitter.pre_tokenize_str(record)]
 
 
 def parse_words(
-    sentences: list[str],
+    record: str,
     normalizer: normalizers.Normalizer = normalizer,
     splitter: pre_tokenizers.PreTokenizer = word_splitter,
 ) -> list[list[str]]:
-    """Apply standard text normalization and split sentences into words."""
-    words = []
-    for sentence in sentences:
-        sentence = normalizer.normalize_str(sentence)
-        words.append([word for word, _span in splitter.pre_tokenize_str(sentence)])
-    return words
+    """Apply standard text normalization and split blob into words.
+
+    Useful for extracting similar WordLevel tokens if Tokenizer cannot be used due to lack of Vocabulary.
+    """
+    record = normalizer.normalize_str(record)
+    return [word for word, _span in splitter.pre_tokenize_str(record)]
 
 
 def batch_map(
@@ -119,6 +126,8 @@ def batch_map(
     fn: Callable,
     **kwargs,
 ) -> dict[str, list[list[str]]]:
-    """Wrapper function for preprocessing pipeline."""
-    batch = [fn(blob, **kwargs) for blob in batch]
-    return {key: batch}
+    """Allow function that handles single examples to operate over batch."""
+    return {key: list(flatten([fn(record, **kwargs) for record in batch]))}
+
+
+# %%

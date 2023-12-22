@@ -5,23 +5,25 @@ from functools import partial
 import logging
 from pathlib import Path
 import pickle
+import re
 import sys
+from typing import Optional, Union
 
 from tqdm import tqdm
+
+from nltk.tokenize import TreebankWordDetokenizer
+
+import datasets
 
 sys.path.insert(0, str(Path(__file__ + "/../../").resolve()))
 from slm.data import (  # NOQA: E402
     DATASETS,
     LOADER_KWARGS,
     MAP_KWARGS,
-    N_SHARDS,
     bookcorpus,
     commoncrawl,
     wikipedia,
 )
-
-# NOQA: E402
-from slm.preprocess import batch_map, parse_words  # NOQA: E402
 from slm.utils import flatten, get_project_root  # NOQA: E402
 from slm.word2vec.vocab import Vocab  # NOQA: E402
 
@@ -48,7 +50,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--name", required=False, type=str, default=None)
     parser.add_argument("-s", "--split", required=False, type=str, default="train")
     parser.add_argument("-k", "--key", required=False, type=str, default="text")
-    # parser.add_argument("-p", "--save_file", required=False, type=Path, default=None)
+    # parser.add_argument("-p", "--save_dir", required=False, type=Path, default=None)
 
     args = parser.parse_args()
     dataset = args.dataset
@@ -56,11 +58,13 @@ if __name__ == "__main__":
     split = args.split
     key = args.key
 
+    # replicate default save logic to check if files exist
     save_prefix = f"{dataset}_{name}" if name else f"{dataset}"
-    save_file = Path(ARTIFACT_DIR / f"{save_prefix}_vocab.pkl")
+    save_dir = Path(DATA_DIR / f"{save_prefix}")
 
-    if save_file.exists():
-        print("File exists at save path.  Continuing will overwrite existing file.")
+    shards = Path(save_dir).glob("shard_*")
+    if any(shards):
+        print("File(s) exist in save dir.  Continuing will overwrite existing file(s).")
         response = str(input("Continue? [y/N]  "))
         if response.lower() not in ["y", "yes"]:
             print("Exiting at user request.")
@@ -70,7 +74,7 @@ if __name__ == "__main__":
     loader_kwargs["download_mode"] = "reuse_cache_if_exists"  # use existing raw download, but not any prior work
 
     map_kwargs = MAP_KWARGS
-    map_kwargs["input_columns"] = key
+    # map_kwargs["input_columns"] = key
 
     match dataset:
         case "bookcorpus":
@@ -80,6 +84,7 @@ if __name__ == "__main__":
                 loader_kwargs=loader_kwargs,
                 map_kwargs=map_kwargs,
             )
+
         case "commoncrawl":
             dset = commoncrawl(
                 name=name if name else "realnewslike",
@@ -97,25 +102,5 @@ if __name__ == "__main__":
                 loader_kwargs=loader_kwargs,
                 map_kwargs=map_kwargs,
             )
-
-    dsamples = dset.num_rows
-    logger.info(f"{dataset}'s '{split}' split has {dsamples} records")
-
-    dset = dset.to_iterable_dataset(num_shards=N_SHARDS)
-    dset = dset.map(partial(batch_map, key=key, fn=parse_words), **map_kwargs)
-
-    logger.info("Begin processing dataset & counting...")
-    iterds = iter(dset)
-    counter = Counter()
-    for blob in tqdm(iterds, total=dsamples):
-        counter.update(flatten(blob[key]))
-    else:
-        logger.info("Counting complete")
-
-    logger.info("Creating vocab...")
-    vocab = Vocab(counter)
-    logger.info("Saving vocab...")
-    with save_file.open("wb") as f:
-        pickle.dump(vocab, f)
 
     logger.info("Process complete.")

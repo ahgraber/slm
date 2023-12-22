@@ -1,9 +1,10 @@
 # %%
+# from typing import Iterable
+from collections.abc import Iterable, Sequence
 import logging
 import os
 from pathlib import Path
 import subprocess
-from typing import Iterable
 
 # %%
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 # %%
 def get_project_root():
     """Return top-level directory of (current) git repo."""
-    git_call = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True)
+    git_call = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True)  # NOQA: S603,S607
     repo_path = Path(git_call.stdout.decode("utf-8").strip())
     return repo_path
 
@@ -32,14 +33,14 @@ def torch_device():
 
 
 # %%
-def init_nltk(model: str = "punkt", savedir: Path = Path(".")):
+def init_nltk(model: str = "punkt", save_dir: Path = Path(".")):
     """Ensure NLTK model is downloaded/available."""
     import nltk
 
-    savedir.mkdir(parents=True, exist_ok=True)
+    save_dir.mkdir(parents=True, exist_ok=True)
 
     # specify download dir for nltk by setting NLTK_DATA env var
-    os.environ["NLTK_DATA"] = str(savedir.resolve())
+    os.environ["NLTK_DATA"] = str(save_dir.resolve())
     nltk.download(model)
 
 
@@ -54,12 +55,13 @@ def init_spacy(model: str = "en_core_web_sm"):
 
 
 # %%
-def flatten(iterable: Iterable):
-    """Flatten arbitrarily nested iterable to lowest level."""
-    for i in iterable:
-        if isinstance(i, (str, bytes)):
-            yield i
-        elif isinstance(i, Iterable):
-            yield from flatten(i)
-        else:
-            raise TypeError(f"iterable was unexpected type {type(iterable)}")
+def flatten(batch: Sequence):
+    """Flatten arbitrarily nested Sequence to lowest level."""
+    match batch:
+        case str() | bytes():
+            yield batch
+        case Sequence():
+            for blob in batch:
+                yield from flatten(blob)
+        case _:
+            yield batch
