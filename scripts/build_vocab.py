@@ -1,3 +1,5 @@
+"""Build vocab from preprocessed dataset."""
+
 # %%
 import argparse
 from collections import Counter
@@ -10,18 +12,8 @@ import sys
 from tqdm import tqdm
 
 sys.path.insert(0, str(Path(__file__ + "/../../").resolve()))
-from slm.data import (  # NOQA: E402
-    DATASETS,
-    LOADER_KWARGS,
-    MAP_KWARGS,
-    N_SHARDS,
-    bookcorpus,
-    commoncrawl,
-    wikipedia,
-)
-
-# NOQA: E402
-from slm.preprocess import batch_map, parse_words  # NOQA: E402
+from slm.data import constants  # NOQA: E402
+from slm.data.preprocess import batch_map, load_data, parse_words  # NOQA: E402
 from slm.utils import flatten, get_project_root  # NOQA: E402
 from slm.word2vec.vocab import Vocab  # NOQA: E402
 
@@ -44,20 +36,25 @@ DATA_DIR = ROOT_DIR / "data"
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--dataset", required=True, choices=DATASETS)
+    parser.add_argument("-d", "--dataset", required=True, choices=constants.MANAGED_DATASETS)
     parser.add_argument("-n", "--name", required=False, type=str, default=None)
-    parser.add_argument("-s", "--split", required=False, type=str, default="train")
+    # parser.add_argument("-s", "--split", required=False, type=str, default="train")
     parser.add_argument("-k", "--key", required=False, type=str, default="text")
-    # parser.add_argument("-p", "--save_file", required=False, type=Path, default=None)
+    parser.add_argument("-i", "--data_dir", required=False, type=Path, default=None)
+    # parser.add_argument("-o", "--save_file", required=False, type=Path, default=None)
 
     args = parser.parse_args()
     dataset = args.dataset
     name = args.name
-    split = args.split
+    # split = args.split
     key = args.key
+
+    data_dir = args.data_dir
+    # save_file = args.save_file
 
     save_prefix = f"{dataset}_{name}" if name else f"{dataset}"
     save_file = Path(ARTIFACT_DIR / f"{save_prefix}_vocab.pkl")
+    save_file.parent.mkdir(parents=True, exist_ok=True)
 
     if save_file.exists():
         print("File exists at save path.  Continuing will overwrite existing file.")
@@ -66,49 +63,20 @@ if __name__ == "__main__":
             print("Exiting at user request.")
             sys.exit(0)
 
-    loader_kwargs = LOADER_KWARGS
-    loader_kwargs["download_mode"] = "reuse_cache_if_exists"  # use existing raw download, but not any prior work
-
-    map_kwargs = MAP_KWARGS
+    map_kwargs = constants.MAP_KWARGS
     map_kwargs["input_columns"] = key
 
-    match dataset:
-        case "bookcorpus":
-            dset = bookcorpus(
-                split=split,
-                key=key,
-                loader_kwargs=loader_kwargs,
-                map_kwargs=map_kwargs,
-            )
-        case "commoncrawl":
-            dset = commoncrawl(
-                name=name if name else "realnewslike",
-                split=split,
-                key=key,
-                loader_kwargs=loader_kwargs,
-                map_kwargs=map_kwargs,
-            )
-
-        case "wikipedia":
-            dset = wikipedia(
-                name=name if name else "20231101.en",
-                split=split,
-                key=key,
-                loader_kwargs=loader_kwargs,
-                map_kwargs=map_kwargs,
-            )
-
+    dset = load_data(dataset, name=name, data_dir=data_dir)
     dsamples = dset.num_rows
-    logger.info(f"{dataset}'s '{split}' split has {dsamples} records")
+    logger.info(f"{dataset} has {dsamples} records")
 
-    dset = dset.to_iterable_dataset(num_shards=N_SHARDS)
-    dset = dset.map(partial(batch_map, key=key, fn=parse_words), **map_kwargs)
+    dset = dset.to_iterable_dataset(num_shards=constants.N_SHARDS)
 
     logger.info("Begin processing dataset & counting...")
     iterds = iter(dset)
     counter = Counter()
-    for blob in tqdm(iterds, total=dsamples):
-        counter.update(flatten(blob[key]))
+    for record in tqdm(iterds, total=dsamples):
+        counter.update(parse_words(record[key]))
     else:
         logger.info("Counting complete")
 

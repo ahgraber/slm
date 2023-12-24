@@ -1,3 +1,5 @@
+"""Predefined preprocessing for a selection of huggingface datasets."""
+
 # %%
 import argparse
 from collections import Counter
@@ -16,6 +18,7 @@ from nltk.tokenize import TreebankWordDetokenizer
 import datasets
 
 sys.path.insert(0, str(Path(__file__ + "/../../").resolve()))
+from slm.data import constants  # NOQA: E402
 from slm.data.preprocess import (  # NOQA: E402
     clean_wiki_articles,
     normalizer,
@@ -32,10 +35,9 @@ logger = logging.getLogger(__name__)
 LOG_FMT = "%(asctime)s - %(levelname)-8s - %(name)s - %(funcName)s:%(lineno)d - %(message)s"  # noqa: N806
 logging.basicConfig(format=LOG_FMT)
 logging.captureWarnings(True)
+logger.setLevel(logging.INFO)
 
 slm_logger = logging.getLogger("slm")
-
-logger.setLevel(logging.INFO)
 slm_logger.setLevel(logging.INFO)
 
 # %%
@@ -43,16 +45,16 @@ ROOT_DIR = get_project_root()
 DATA_DIR = ROOT_DIR / "data"
 
 # %%
-managed_datasets = ["bookcorpus", "commoncrawl", "wikipedia"]
+MANAGED_DATASETS = ["bookcorpus", "commoncrawl", "wikipedia"]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--dataset", required=True, choices=managed_datasets)
+    parser.add_argument("-d", "--dataset", required=True, choices=constants.MANAGED_DATASETS)
     parser.add_argument("-n", "--name", required=False, type=str, default=None)
     parser.add_argument("-s", "--split", required=False, type=str, default="train")
     parser.add_argument("-k", "--key", required=False, type=str, default="text")
-    # parser.add_argument("-p", "--save_dir", required=False, type=Path, default=None)
+    # parser.add_argument("-o", "--save_dir", required=False, type=Path, default=None)
 
     args = parser.parse_args()
     dataset = args.dataset
@@ -60,44 +62,39 @@ if __name__ == "__main__":
     split = args.split
     key = args.key
 
-    # replicate default save logic to check if files exist
-    save_prefix = f"{dataset}_{name}" if name else f"{dataset}"
-    save_dir = Path(DATA_DIR / f"{save_prefix}")
-
     match dataset:
         case "bookcorpus":
+            name = name if name else None
             map_fns = [
                 treebank_detokenize,  # undo existing pretokenization
                 normalizer.normalize_str,  # standard text normalization
             ]
-            prep_data(
-                "bookcorpus",
-                map_fns=map_fns,
-                save_dir=save_dir,
-            )
 
         case "commoncrawl":
+            name = name if name else "realnewslike"
+
             map_fns = [
                 parse_sentences,  # standard text normalization & split into sentences
             ]
-            prep_data(
-                "c4",
-                name=name if name else "realnewslike",
-                map_fns=map_fns,
-                save_dir=save_dir,
-            )
 
         case "wikipedia":
+            name = name if name else "20231101.en"
             map_fns = [
                 prenormalizer.normalize_str,  # pre-cealn
                 clean_wiki_articles,  # clean wikipedia articles
                 parse_sentences,  # standard text normalization & split into sentences
             ]
-            prep_data(
-                "wikimedia/wikipedia",
-                name=name if name else "20231101.en",
-                map_fns=map_fns,
-                save_dir=save_dir,
-            )
+
+    # replicate default save logic to check if files exist
+    save_prefix = f"{dataset}_{name}" if name else f"{dataset}"
+    save_dir = Path(DATA_DIR / f"{save_prefix}")
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    prep_data(
+        dataset,
+        name=name,
+        map_fns=map_fns,
+        save_dir=save_dir,
+    )
 
     logger.info("Process complete.")

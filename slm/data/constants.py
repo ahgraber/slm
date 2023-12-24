@@ -1,4 +1,6 @@
 # %%
+MANAGED_DATASETS = ["bookcorpus", "commoncrawl", "wikipedia"]
+
 SPLIT = "train"
 KEY = "text"
 

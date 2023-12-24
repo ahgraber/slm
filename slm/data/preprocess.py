@@ -172,22 +172,22 @@ def prep_data(
 def load_data(
     dataset: str,
     name: str = None,
-    save_dir: Union[Path, str] = None,
+    data_dir: Union[Path, str] = None,
 ):
     """Load preprocessing dataset from local files.
 
     NOTE: Does not include final normalization or tokenization.
     """
-    if save_dir is None:
+    if data_dir is None:
         save_prefix = f"{dataset}_{name}" if name else f"{dataset}"
-        save_dir = DATA_DIR / f"{save_prefix}"
+        data_dir = DATA_DIR / f"{save_prefix}"
     else:
-        save_dir = Path(save_dir)
+        data_dir = Path(data_dir)
 
-    shards = Path(save_dir).glob("*.arrow")
+    shards = Path(data_dir).glob("*.arrow")
     if any(shards):
         logger.info("Loading from saved work...")
-        return datasets.load_from_disk(save_dir)
+        return datasets.load_from_disk(data_dir)
 
     else:
-        raise FileNotFoundError(f"No preprocessed data found in {save_dir}.  Run `prep_data` first?")
+        raise FileNotFoundError(f"No preprocessed data found in {data_dir}.  Run `prep_data` first?")
