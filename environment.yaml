@@ -20,6 +20,7 @@ dependencies:
   - spacy
   ## pytorch / transformers
   - conda-forge:safetensors #==0.3.3
+  - conda-forge:tensorboard
   - conda-forge:tokenizers #>0.13,<0.14
   - conda-forge:torchmetrics #>=1.1.1,<1.2
   - conda-forge:sentence-transformers
