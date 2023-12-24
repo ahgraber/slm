@@ -1,24 +1,8 @@
 # %%
-from collections import Counter, OrderedDict
-from functools import partial
-import itertools
-import logging
-import os
-from pathlib import Path
-import random
+from collections import Counter
 import re
-import string
-import sys
-from typing import Any, Callable, Iterable, Optional, Union
-import unicodedata
 
 import pytest
-from tqdm import tqdm
-
-import numpy as np
-
-import nltk
-import spacy
 
 from slm.word2vec.vocab import SEP_TOKEN, UNK_TOKEN, Vocab  # NOQA: E402
 

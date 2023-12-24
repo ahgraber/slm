@@ -10,6 +10,7 @@ Notes on using Huggingface Datasets
     - [bookcorpus](#bookcorpus)
     - [c4 - realnewslike](#c4---realnewslike)
     - [wikimedia/wikipedia - english](#wikimediawikipedia---english)
+  - [Sentence Splitting](#sentence-splitting)
 
 ## Source data
 
@@ -66,3 +67,16 @@ The `wikipedia` dataset is built from the [Wikipedia dumps](https://dumps.wikime
 Dataset articles appear to include extraneous appendices that are not good examples of natural language.  As a result, we truncate the main article blob to not include headings included in the [standard appendicdes and footers](https://en.wikipedia.org/wiki/Wikipedia:Manual_of_Style/Layout#Standard_appendices_and_footers).
 
 Once truncated, standard preprocessing is applied.
+
+## Sentence Splitting
+
+Edge cases in sentence splitting can be tested with:
+
+<!-- markdownlint-disable MD013 -->
+```txt
+Dr. Smith, who works at the University of California, Berkeley, sent me an email. He said, "I don't understand why we can't apply for a grant." I replied, "Maybe we should contact the university administration for assistance."
+
+# ref https://gist.github.com/owens2727/b936168921d3468d88bb27d2016044c9
+He removed the director! Of the FBI? You're kidding... Mr. Comey was removed from his post as F.B.I. Director in May of 2017\nMr. Comey used to the Director of the F.B.I. Now he is a private citizen. James B. Comey was born on December 14, 1960. In college, James Comey never once earned a B.He got straight A's.
+```
+<!-- markdownlint-enable -->
