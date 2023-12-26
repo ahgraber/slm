@@ -1,5 +1,11 @@
 # %%
-MANAGED_DATASETS = ["bookcorpus", "commoncrawl", "wikipedia"]
+# MANAGED_DATASETS = ["bookcorpus", "commoncrawl", "wikipedia"]
+MANAGED_DATASETS = {
+    "bookcorpus": {"path": "bookcorpus", "name": None},
+    "commoncrawl": {"path": "c4", "name": "realnewslike"},
+    "wikipedia": {"path": "wikimedia/wikipedia", "name": "20231101.en"},
+}
+
 
 SPLIT = "train"
 KEY = "text"

@@ -129,8 +129,8 @@ def prep_data(
     NOTE: Does not include final normalization or tokenization.
     """
     if save_dir is None:
-        save_prefix = f"{dataset}_{name}" if name else f"{dataset}"
-        save_dir = DATA_DIR / f"{save_prefix}"
+        save_prefix = f"{dataset}/{name}" if name else dataset
+        save_dir = DATA_DIR / save_prefix
     else:
         save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -179,8 +179,9 @@ def load_data(
     NOTE: Does not include final normalization or tokenization.
     """
     if data_dir is None:
-        save_prefix = f"{dataset}_{name}" if name else f"{dataset}"
-        data_dir = DATA_DIR / f"{save_prefix}"
+        save_prefix = f"{dataset}/{name}" if name else dataset
+        data_dir = DATA_DIR / save_prefix
+
     else:
         data_dir = Path(data_dir)
 

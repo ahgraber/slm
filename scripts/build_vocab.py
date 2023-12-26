@@ -45,15 +45,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     dataset = args.dataset
-    name = args.name
+    path = constants.MANAGED_DATASETS[dataset]["path"]
+    name = args.name if args.name else constants.MANAGED_DATASETS[dataset]["name"]
     # split = args.split
     key = args.key
 
     data_dir = args.data_dir
     # save_file = args.save_file
 
-    save_prefix = f"{dataset}_{name}" if name else f"{dataset}"
-    save_file = Path(ARTIFACT_DIR / f"{save_prefix}_vocab.pkl")
+    save_prefix = f"{path}/{name}" if name else path
+    save_file = Path(ARTIFACT_DIR / "vocab" / f"{save_prefix.replace('/', '_')}_vocab.pkl")
     save_file.parent.mkdir(parents=True, exist_ok=True)
 
     if save_file.exists():
@@ -66,7 +67,11 @@ if __name__ == "__main__":
     map_kwargs = constants.MAP_KWARGS
     map_kwargs["input_columns"] = key
 
-    dset = load_data(dataset, name=name, data_dir=data_dir)
+    dset = load_data(
+        constants.MANAGED_DATASETS[dataset]["path"],
+        name=name,
+        data_dir=data_dir,
+    )
     dsamples = dset.num_rows
     logger.info(f"{dataset} has {dsamples} records")
 

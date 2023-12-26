@@ -50,7 +50,7 @@ MANAGED_DATASETS = ["bookcorpus", "commoncrawl", "wikipedia"]
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", "--dataset", required=True, choices=constants.MANAGED_DATASETS)
+    parser.add_argument("-d", "--dataset", required=True, choices=constants.MANAGED_DATASETS.keys())
     parser.add_argument("-n", "--name", required=False, type=str, default=None)
     parser.add_argument("-s", "--split", required=False, type=str, default="train")
     parser.add_argument("-k", "--key", required=False, type=str, default="text")
@@ -58,27 +58,24 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     dataset = args.dataset
-    name = args.name
+    path = constants.MANAGED_DATASETS[dataset]["path"]
+    name = args.name if args.name else constants.MANAGED_DATASETS[dataset]["name"]
     split = args.split
     key = args.key
 
     match dataset:
         case "bookcorpus":
-            name = name if name else None
             map_fns = [
                 treebank_detokenize,  # undo existing pretokenization
                 normalizer.normalize_str,  # standard text normalization
             ]
 
         case "commoncrawl":
-            name = name if name else "realnewslike"
-
             map_fns = [
                 parse_sentences,  # standard text normalization & split into sentences
             ]
 
         case "wikipedia":
-            name = name if name else "20231101.en"
             map_fns = [
                 prenormalizer.normalize_str,  # pre-cealn
                 clean_wiki_articles,  # clean wikipedia articles
@@ -86,12 +83,12 @@ if __name__ == "__main__":
             ]
 
     # replicate default save logic to check if files exist
-    save_prefix = f"{dataset}_{name}" if name else f"{dataset}"
-    save_dir = Path(DATA_DIR / f"{save_prefix}")
+    save_prefix = f"{path}/{name}" if name else path
+    save_dir = DATA_DIR / save_prefix
     save_dir.mkdir(parents=True, exist_ok=True)
 
     prep_data(
-        dataset,
+        path,
         name=name,
         map_fns=map_fns,
         save_dir=save_dir,
