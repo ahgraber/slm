@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from slm.word2vec.vocab import SEP_TOKEN, UNK_TOKEN, Vocab  # NOQA: E402
+from slm.word2vec.vocab import UNK_TOKEN, Vocab  # NOQA: E402
 
 
 # %%
@@ -79,33 +79,34 @@ class TestVocab:
     @pytest.mark.parametrize(
         "v",
         [
-            Vocab(unk_token=None, sep_token=SEP_TOKEN),
-            Vocab(unk_token=UNK_TOKEN, sep_token=SEP_TOKEN),
+            Vocab(unk_token=None, special_tokens=["<S>", "</S>"]),
+            Vocab(unk_token=UNK_TOKEN, special_tokens=[UNK_TOKEN, "<S>", "</S>"]),
         ],
     )
-    def test_sep(self, v, counter):
-        assert v._sep_token == SEP_TOKEN
-        assert SEP_TOKEN in v._specials
+    def test_special(self, v, counter):
+        specials = ["<S>", "</S>"]
+        assert all(tok in v.specials for tok in specials)
 
-        # test if sep was added to vocab objects
+        # test if specials added to vocab object
         v.update(counter)
-        assert SEP_TOKEN in v.vocab
-        assert SEP_TOKEN in v
+        assert all(tok in v.vocab for tok in specials)
+        assert all(tok in v for tok in specials)
+
         # counter does not include special tokens
         assert len(v) == len(v.vocab) != len(v.counter)
 
         # token ids should be deterministic
         tok_id = 1 if v._unk_token else 0
-        assert (v.word2id(SEP_TOKEN) == tok_id) and (v.id2word(tok_id) == SEP_TOKEN)
-        assert (v[SEP_TOKEN] == tok_id) and (v[tok_id] == SEP_TOKEN)
+        assert (v.word2id(specials[0]) == tok_id) and (v.id2word(tok_id) == specials[0])
+        assert (v[specials[0]] == tok_id) and (v[tok_id] == specials[0])
 
     @pytest.mark.parametrize(
         "v",
         [
-            Vocab(unk_token=None, sep_token=None),
-            Vocab(unk_token=None, sep_token=SEP_TOKEN),
-            Vocab(unk_token=UNK_TOKEN, sep_token=None),
-            Vocab(unk_token=UNK_TOKEN, sep_token=SEP_TOKEN),
+            Vocab(unk_token=None, special_tokens=None),
+            Vocab(unk_token=None, special_tokens=["<S>", "</S>"]),
+            Vocab(unk_token=UNK_TOKEN, special_tokens=None),
+            Vocab(unk_token=UNK_TOKEN, special_tokens=["<S>", "</S>"]),
         ],
     )
     def test_lookups(self, counter, v):
@@ -116,7 +117,7 @@ class TestVocab:
         assert "LIKE" == v[tok_id] == v.id2word(tok_id) == v[v["LIKE"]]
 
     def test_size_gt_n_words(self, counter):
-        v = Vocab(counter, size=1_000, min_freq=1, unk_token=None, sep_token=None)
+        v = Vocab(counter, size=1_000, min_freq=1, unk_token=None, special_tokens=None)
 
         # len(counter) is ground truth (un-truncated) length
         assert len(counter) == len(v.counter) == len(v.vocab) == len(v)
@@ -130,7 +131,7 @@ class TestVocab:
             v[v.size]  # size > len(v.vocab)
 
     def test_size_lt_n_words(self, counter, size=10):
-        v = Vocab(counter, size=size, min_freq=1, unk_token=None, sep_token=None)
+        v = Vocab(counter, size=size, min_freq=1, unk_token=None, special_tokens=None)
 
         # len(counter) is ground truth (un-truncated) length
         assert len(counter) == len(v.counter)
@@ -148,7 +149,7 @@ class TestVocab:
 
     @pytest.mark.parametrize("min_freq", [2, 6, 30])
     def test_min_freq(self, counter, min_freq):
-        v = Vocab(counter=counter, min_freq=min_freq, unk_token=None, sep_token=None)
+        v = Vocab(counter=counter, min_freq=min_freq, unk_token=None, special_tokens=None)
 
         # assert len(counter) == 27
         if min_freq == 2:
@@ -179,8 +180,8 @@ class TestVocab:
             )
 
     def test_update(self, counter):
-        v1 = Vocab(counter, min_freq=1, unk_token=None, sep_token=None)
-        v2 = Vocab(counter, min_freq=1, unk_token=None, sep_token=None)
+        v1 = Vocab(counter, min_freq=1, unk_token=None, special_tokens=None)
+        v2 = Vocab(counter, min_freq=1, unk_token=None, special_tokens=None)
         v2.update(Counter(["I"] * 99))
 
         # check that counter and vocab have updated
@@ -191,7 +192,7 @@ class TestVocab:
         assert v1["I"] > v2["I"]
 
     def test_delete_no_specials(self, counter):
-        v = Vocab(counter, min_freq=1, unk_token=None, sep_token=None)
+        v = Vocab(counter, min_freq=1, unk_token=None, special_tokens=None)
         like_idx = v["LIKE"]
         excl_idx = v["!"]
 
@@ -212,7 +213,7 @@ class TestVocab:
         assert excl_idx != v["!"]  # indices of words less frequent than deleted _do_ change
 
     def test_delete_with_specials(self, counter):
-        v = Vocab(counter, min_freq=1, unk_token=UNK_TOKEN, sep_token=SEP_TOKEN)
+        v = Vocab(counter, min_freq=1, unk_token=UNK_TOKEN, special_tokens=["s", "/s"])
         like_idx = v["LIKE"]
         excl_idx = v["!"]
 

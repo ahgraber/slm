@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 VOCAB_SIZE = 60_000
 VOCAB_MIN_FREQ = 3
 UNK_TOKEN = "<UNK>"  # noqa: S105
-SEP_TOKEN = "<SEP>"  # noqa: S105
 
 
 class Vocab:
@@ -31,7 +30,7 @@ class Vocab:
         size: Optional[int] = VOCAB_SIZE,
         min_freq: Optional[int] = VOCAB_MIN_FREQ,
         unk_token: Optional[str] = UNK_TOKEN,
-        sep_token: Optional[str] = None,
+        special_tokens: Optional[list[str]] = None,
     ):
         self.size = size
         self.min_freq = min_freq
@@ -39,12 +38,15 @@ class Vocab:
         self.vocab = []
 
         self._unk_token = unk_token
-        self._sep_token = sep_token
+        self._special_tokens = special_tokens
         self._specials = []
         if self._unk_token:
             self._specials.append(unk_token)
-        if self._sep_token:
-            self._specials.append(sep_token)
+        if self._special_tokens:
+            self._specials.extend(special_tokens)
+
+        # deduplicate but keep order
+        self._specials = list(dict.fromkeys(self._specials))
 
         self._infrequent = set()
 
@@ -70,6 +72,11 @@ class Vocab:
                 return self.id2word(item)
             case str():
                 return self.word2id(item)
+
+    @property
+    def specials(self):
+        """Return special tokens."""
+        return self._specials
 
     def __sort_counter(self, count_tuples: tuple[str, int]) -> list[tuple[str, int]]:
         """Sort Counter by descending counts, then alphabetically for tiebreaking."""
