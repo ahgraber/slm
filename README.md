@@ -17,7 +17,6 @@ specifically [Let's build GPT: from scratch, in code, spelled out](https://www.y
 ## Goals
 
 1. Pretrain a GPT-style (Generative Pretrained Transformer) foundational model
-   Per 'mamba' paper, use current SOTA architecture "rotary embedding, SwiGLU MLP, RMSNorm instead of LayerNorm, no linear bias, and higher learning rates"
 2. Fine-tune the model for some task (TBD)
 3. Evaluate responses and [use RLHF (Reinforcement Learning w/ Human Feedback) or DPO (Direct Preference Optimization) to align model with expected response quality](https://magazine.sebastianraschka.com/p/llm-training-rlhf-and-its-alternatives).
    This may require self-deploying an annotation tool like [doccano](https://github.com/doccano/doccano) or [Label Studio](https://labelstud.io/guide/get_started.html#Quick-start)
@@ -27,15 +26,18 @@ specifically [Let's build GPT: from scratch, in code, spelled out](https://www.y
 
 ## Additional Experiments
 
-- Evaluate nonlinearities in style of [Karpathy](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b)
+- [x] Evaluate nonlinearities in style of [Karpathy](https://karpathy.medium.com/yes-you-should-understand-backprop-e2f06eab496b)
   see: [GLU Variants Improve Transformer](https://arxiv.org/abs/2002.05202v1)
-- Given scaling laws expectations [1](https://arxiv.org/abs/2001.08361), [2](https://blog.eleuther.ai/transformer-math/), [3](https://arxiv.org/abs/2203.15556), what is the optimal dataset and model params given my compute (RTX 3090)?
-  Is it possible to reduce model compute requirements from full RTX 3090 --> CPU?
-- Given easily-available training sets, how does `SLM` perform on bias and toxicity?
 - Word2vec
   - find linear transformation to get (gender, royalty) hyperplane for `king - man + woman = queen`?
   - tok2vec - same process but with BPE (byte-pair encoding)? (is this ~ FastText?)
 - BERT
+- GPT2
+- Modern LLM -> Per 'mamba' paper, use current SOTA architecture "rotary embedding, SwiGLU MLP, RMSNorm instead of LayerNorm, no linear bias, and higher learning rates"
+- Mamba LLM
+- Given scaling laws expectations [1](https://arxiv.org/abs/2001.08361), [2](https://blog.eleuther.ai/transformer-math/), [3](https://arxiv.org/abs/2203.15556), what is the optimal dataset and model params given my compute (RTX 3090)?
+  Is it possible to reduce model compute requirements from full RTX 3090 --> CPU?
+- Given easily-available training sets, how does `SLM` perform on bias and toxicity?
 
 ## Notes on Infrastructure
 
@@ -43,6 +45,8 @@ I do most of my dev work on a Macbook Pro M1 with 16 GB RAM.  For training, I pl
 This may not be optimal given [Tim Dettmers' Jan 2023 investigation](https://timdettmers.com/2023/01/30/which-gpu-for-deep-learning/) but it is cheap (i.e., I already have it).
 I intend to host the model, API Endpoints, and annotation tooling on my [self-hosted k3s cluster](https://github.com/ahgraber/homelab-gitops-k3s);
 these nodes have an Intel i3-10100T and 32 GB RAM -- therefore, the model must be able to be run on CPU!
+
+See also [Oxen-AI/rag-dive](https://github.com/Oxen-AI/rag-dive/tree/main) for example using OxenAI (large data version control), modal (cloud GPU), etc.
 
 ## References
 

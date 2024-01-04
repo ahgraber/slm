@@ -68,8 +68,7 @@ if __name__ == "__main__":
     map_kwargs["input_columns"] = key
 
     dset = load_data(
-        constants.MANAGED_DATASETS[dataset]["path"],
-        name=name,
+        managed_ds=dataset,
         data_dir=data_dir,
     )
     dsamples = dset.num_rows

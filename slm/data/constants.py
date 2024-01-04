@@ -12,7 +12,7 @@ KEY = "text"
 
 N_SHARDS = 32
 BATCH_SIZE = 64
-
+BUFFER_SIZE = 1_000
 LOADER_KWARGS = {
     "split": SPLIT,
     # ["force_redownload", "reuse_cache_if_exists", "reuse_dataset_if_exists"]

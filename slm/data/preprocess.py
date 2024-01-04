@@ -1,22 +1,27 @@
 # %%
+from collections import defaultdict
 from functools import partial
 import logging
 from pathlib import Path
 import re
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from nltk.tokenize import TreebankWordDetokenizer
 
 import datasets
 from tokenizers import (
     Regex,
+    Tokenizer,
+    models,
     normalizers,
     pre_tokenizers,
+    processors,
 )
 
 from slm.data import constants
 from slm.data.sentence_pretokenizer import SentencePreTokenizer
 from slm.utils import flatten, get_project_root
+from slm.word2vec.vocab import END_TOKEN, START_TOKEN, UNK_TOKEN, Vocab  # NOQA: E402
 
 # %%
 logger = logging.getLogger(__name__)
@@ -46,6 +51,23 @@ word_splitter = pre_tokenizers.Sequence(
 )
 
 
+def w2v_tokenizer(vocab: Vocab, start=START_TOKEN, end=END_TOKEN):
+    """Instantiate WordLevel tokenizer from vocab."""
+    tokenizer = Tokenizer(models.WordLevel(vocab=vocab.to_dict(), unk_token=UNK_TOKEN))
+    tokenizer.normalizer = normalizer
+    tokenizer.pre_tokenizer = word_splitter
+    tokenizer.post_processor = processors.TemplateProcessing(  # add separators
+        single=f"{start} $0 {end}",
+        pair=f"{start} $A {start} {end} $B:1 {end}:1",  # unneeded for word2vec
+        special_tokens=[
+            (start, tokenizer.token_to_id(start)),
+            (end, tokenizer.token_to_id(end)),
+        ],
+    )
+
+    return tokenizer
+
+
 def parse_sentences(
     record: str,
     normalizer: normalizers.Normalizer = normalizer,
@@ -67,6 +89,29 @@ def parse_words(
     """
     record = normalizer.normalize_str(record)
     return [word for word, _span in splitter.pre_tokenize_str(record)]
+
+
+# %%
+def tokenize(record: str, tokenizer: Tokenizer) -> dict[str, list[Any]]:
+    """Convert Tokenizer output to dict."""
+    output = tokenizer.encode(record)
+    return {
+        "ids": output.ids,
+        "tokens": output.tokens,
+        "attention_mask": output.attention_mask,
+    }
+
+
+def tokenize_batch(batch: list[str], tokenizer: Tokenizer) -> dict[str, list[list[Any]]]:
+    """Convert batched tokenization to dict."""
+    outbatch = defaultdict(list)
+    for record in batch:
+        output = tokenizer.encode(record)
+        outbatch["ids"].append(output.ids)
+        outbatch["tokens"].append(output.tokens)
+        outbatch["attention_mask"].append(output.attention_mask)
+
+    return dict(outbatch)
 
 
 # %%
@@ -158,28 +203,37 @@ def prep_data(
 
     # convert iterable to standard dataset for saving
     logger.info("Processing...")
-    ds = datasets.Dataset.from_generator(partial(gen_from_iterable_dataset, ds), features=ds.features)
+    ds = datasets.Dataset.from_generator(
+        partial(gen_from_iterable_dataset, ds),
+        features=ds.features,
+    )
     logger.info(f"After processing, {dataset}'s '{loader_kwargs['split']}' split has {ds.num_rows} records")
 
     # save to reload later
     logger.info("Saving...")
-    ds.save_to_disk(Path(save_dir), num_shards=constants.N_SHARDS, num_proc=loader_kwargs["num_proc"])
+    ds.save_to_disk(
+        Path(save_dir),
+        num_shards=constants.N_SHARDS,
+        num_proc=loader_kwargs["num_proc"],
+    )
 
     logger.info("Preprocessing completee!")
     return ds
 
 
 def load_data(
-    dataset: str,
-    name: str = None,
-    data_dir: Union[Path, str] = None,
+    managed_ds: Optional[str] = None,
+    data_dir: Optional[Union[Path, str]] = None,
 ):
-    """Load preprocessing dataset from local files.
+    """Load dataset from local files / managed datasets.
 
     NOTE: Does not include final normalization or tokenization.
     """
     if data_dir is None:
-        save_prefix = f"{dataset}/{name}" if name else dataset
+        path = constants.MANAGED_DATASETS[managed_ds]["path"]
+        name = constants.MANAGED_DATASETS[managed_ds]["name"]
+
+        save_prefix = f"{path}/{name}" if name else path
         data_dir = DATA_DIR / save_prefix
 
     else:

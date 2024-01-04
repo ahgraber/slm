@@ -9,7 +9,9 @@ logger = logging.getLogger(__name__)
 # %%
 VOCAB_SIZE = 60_000
 VOCAB_MIN_FREQ = 3
-UNK_TOKEN = "<UNK>"  # noqa: S105
+UNK_TOKEN = "<UNK>"  # NOQA: S105
+START_TOKEN = "<S>"  # NOQA: S105
+END_TOKEN = "</S>"  # NOQA: S105
 
 
 class Vocab:
