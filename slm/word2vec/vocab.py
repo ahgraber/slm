@@ -21,16 +21,16 @@ class Vocab:
 
     Notes
     -----
-    `counter` is a much more stable representation of the lexicon than `vocab`;
+    `counter` is a much more stable representation of the lexicon than `vocab` --
     words do not get removed `counter` unless `delete` is specifically called,
-    while `vocab` is influenced by both `size` limits and `min_freq` limits.
+    while `vocab` is influenced by both `size` and `min_freq` limits.
     """
 
     def __init__(
         self,
         counter: Optional[Counter] = None,
-        size: Optional[int] = VOCAB_SIZE,
-        min_freq: Optional[int] = VOCAB_MIN_FREQ,
+        size: int = VOCAB_SIZE,
+        min_freq: int = VOCAB_MIN_FREQ,
         unk_token: Optional[str] = UNK_TOKEN,
         special_tokens: Optional[list[str]] = None,
     ):

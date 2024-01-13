@@ -10,6 +10,8 @@ from tokenizers import (
     PreTokenizedString,
 )
 
+from slm.utils import init_nltk, init_spacy  # NOQA: E402
+
 # %%
 logger = logging.getLogger(__name__)
 
@@ -42,6 +44,10 @@ class SentencePreTokenizer:
         kind: Optional[Literal["nltk", "spacy"]] = None,
     ):
         self.splitter = kind
+
+        # TODO: This feels hacky & like it encourages side-effects?
+        init_nltk(model="punkt")
+        init_spacy(model="en_core_web_sm")
 
     @property
     def splitter(self):

@@ -2,8 +2,8 @@
 
 # %%
 import argparse
-from collections import Counter
-from functools import partial
+import collections
+import itertools
 import logging
 from pathlib import Path
 import pickle
@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 sys.path.insert(0, str(Path(__file__ + "/../../").resolve()))
 from slm.data import constants  # NOQA: E402
-from slm.data.preprocess import batch_map, load_data, parse_words  # NOQA: E402
-from slm.utils import flatten, get_project_root  # NOQA: E402
+from slm.data.preprocess import load_data, parse_ngrams, parse_words  # NOQA: E402
+from slm.utils import get_project_root  # NOQA: E402
 from slm.word2vec.vocab import Vocab  # NOQA: E402
 
 # %%
@@ -78,14 +78,16 @@ if __name__ == "__main__":
 
     logger.info("Begin processing dataset & counting...")
     iterds = iter(dset)
-    counter = Counter()
+    counter = collections.Counter()
     for record in tqdm(iterds, total=dsamples):
         counter.update(parse_words(record[key]))
+        counter.update(parse_ngrams(record[key], 2))
+        counter.update(parse_ngrams(record[key], 3))
     else:
         logger.info("Counting complete")
 
     logger.info("Creating vocab...")
-    vocab = Vocab(counter)
+    vocab = Vocab(collections.Counter(dict(itertools.takewhile(lambda itm: itm[1] > 1, counter.items()))))
     logger.info("Saving vocab...")
     with save_file.open("wb") as f:
         pickle.dump(vocab, f)

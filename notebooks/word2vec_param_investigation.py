@@ -1,5 +1,6 @@
 # %%
 from collections import Counter
+import itertools
 import logging
 import os
 from pathlib import Path
@@ -64,12 +65,15 @@ rnd = np.random.default_rng(SEED)
 
 # %%
 # load and combine vocabs
-vocab = Vocab(size=40_000, min_freq=5, unk_token=UNK_TOKEN, special_tokens=[START_TOKEN, END_TOKEN])
+# be very permissive prior to analysis
+vocab = Vocab(size=1_000_000, min_freq=1, unk_token=UNK_TOKEN, special_tokens=[START_TOKEN, END_TOKEN])
 for pkl in (ARTIFACT_DIR / "vocab").glob("*_vocab.pkl"):
-    logger.debug(f"Loading {pkl}")
+    logger.info(f"Loading {pkl}")
     with pkl.open("rb") as f:
         _v = pickle.load(f)
-    vocab.update(_v.counter)
+
+    # remove tokens with count of 1
+    vocab.update(Counter(dict(itertools.takewhile(lambda x: x[1] > 1, _v.counter.items()))))
 
 logger.info("Combined vocab ")
 
@@ -86,10 +90,10 @@ for i in [40, 60, 80, 100]:
     i = i * 1000
     print(f"{words[i]}: {freqs[i]}")
 
-# kph: 7349
-# schick: 3463
-# porthole: 2032
-# wolski: 1344
+# to jerk: 4626
+# it warmed: 1520
+# intrinsic properties: 402
+# mason up: 42
 
 # describe
 pd.options.display.float_format = "{:_.2f}".format
@@ -99,13 +103,13 @@ print(pd.Series(freqs).describe())
 pd.reset_option("^display")
 
 # Word Frequency stats:
-# count    13_500_402.00
-# mean            878.38
-# std         325_098.68
-# min               1.00
-# 25%               1.00
-# 50%               1.00
-# 75%               4.00
+# count       113_371.00
+# mean        112_405.48
+# std       3_645_583.98
+# min               2.00
+# 25%             265.00
+# 50%           1_836.00
+# 75%           9_154.00
 # max     587_685_970.00
 
 
@@ -120,7 +124,7 @@ pd.Series(freqs).plot(
     xlabel="Word Rank (lower is more frequent)",
     ylabel="(log) Word Frequency (<word> counted Y times)",
 )
-for i in [20, 40, 60, 80, 100, 200, 400, 800]:
+for i in [20, 40, 60, 80, 100, 113]:
     i = i * 1000
 
     ax.annotate(
@@ -160,14 +164,14 @@ pd.reset_option("^display")
 
 # Word Count and Count Frequency stats:
 #           word_freqs  freq_counts
-# count      36_790.00    36_790.00
-# mean      308_158.75       366.96
-# std     6_220_107.29    38_742.84
-# min             1.00         1.00
-# 25%         9_438.25         1.00
-# 50%        24_987.50         1.00
-# 75%        81_850.75         2.00
-# max   587_685_970.00 7_100_663.00
+# count      27_648.00    27_648.00
+# mean      451_150.95         4.10
+# std     7_372_008.66        24.15
+# min             2.00         1.00
+# 25%         9_518.75         1.00
+# 50%        26_228.00         1.00
+# 75%        85_363.50         2.00
+# max   587_685_970.00     2_190.00
 
 # %%
 # plot
@@ -191,10 +195,10 @@ fig, ax = plt.subplots()
     )
 )
 ax.annotate(
-    "Most words occur only once",
-    xy=(1, 10),
+    "Most words occur infrequently",
+    xy=(1, 50),
     xycoords="data",
-    xytext=(0.5 * 10e5, 1),
+    xytext=(100, 15),
     textcoords="data",
     arrowprops=dict(  # NOQA: C408
         arrowstyle="-[",
@@ -206,11 +210,9 @@ ax.annotate(
 )
 ax.annotate(
     "The most frequent words are extreme outliers",
-    # xy=(0.06, 0.5),
-    # textcoords='axes fraction',
-    xy=(7 * 10e5, 1),
+    xy=(2150, 6),
     xycoords="data",
-    xytext=(3 * 10e5, 1),
+    xytext=(1100, 8),
     textcoords="data",
     arrowprops=dict(  # NOQA: C408
         arrowstyle="-[",
@@ -233,22 +235,23 @@ print(
     .set_index("word_freqs")
     / word_frequency_counts.total()
 )
-# NOTE - words appearing only once account for >50% of total vocab
 pd.reset_option("^display")
 
 # % Occurrence of most frequent word-frequencies
 #             freq_counts
 # word_freqs
-# 1                  0.53
-# 2                  0.14
-# 3                  0.06
-# 4                  0.04
-# 5                  0.03
+# 2                  0.01
+# 4                  0.01
 # 6                  0.02
-# 7                  0.02
 # 8                  0.01
-# 9                  0.01
 # 10                 0.01
+# 12                 0.01
+# 14                 0.01
+# 16                 0.00
+# 18                 0.00
+# 20                 0.00
+
+# Words appearing <15x account for 8% of the total count
 
 # %% [markdown]
 # ### Analysis
@@ -271,7 +274,7 @@ split = "train"
 key = "text"
 map_kwargs = constants.MAP_KWARGS
 map_kwargs["input_columns"] = key
-# map_kwargs["batch_size"] = 64
+map_kwargs["batch_size"] = 1000
 
 dsets = []
 dsamples = []
