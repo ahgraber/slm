@@ -1,14 +1,8 @@
 # %%
-import collections
-import functools
-import itertools
 import json
 import logging
-import math
 import os
 from pathlib import Path
-import pickle
-import random
 import sys
 from typing import Any, Callable, Iterable, Literal, Optional, Union
 
@@ -23,8 +17,6 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard.writer import SummaryWriter
 
-# may have to include `.env` file at project root containing `PYTHONPATH="./../src"`
-sys.path.insert(0, str(Path(__file__ + "/../../").resolve()))
 from slm.word2vec import loaders, models, trainer, vocab  # NOQA: E402
 
 # %%
@@ -102,7 +94,7 @@ class Trainer:
             #     epoch + 1,
             # )
             self.writer.add_scalars(
-                "Loss",
+                "loss",
                 {"train": self.loss["train"][-1], "val": self.loss["val"][-1]},
                 epoch,
             )
@@ -123,7 +115,9 @@ class Trainer:
         running_loss = []
 
         # for i, batch_data in enumerate(loader, 1):
-        for i, batch_data in enumerate(tqdm.tqdm(loader, total=self.trn_sample, desc="Training", leave=False)):
+        for i, batch_data in enumerate(
+            tqdm.tqdm(loader, total=int(self.trn_sample / self.batch_size), desc="Training", leave=False)
+        ):
             inputs = batch_data[0].to(self.device)
             labels = batch_data[1].to(self.device)
 
@@ -135,11 +129,12 @@ class Trainer:
 
             running_loss.append(loss.item())
 
-            if i % 100 == 0:
-                # TODO:set global_step param in add_scalar
+            log_steps = 25
+            if (self.trn_sample is not None) and (i % log_steps == (log_steps - 1)):  # every n mini-batches...d
                 self.writer.add_scalar(
-                    f"tr_loss_{epoch}",
-                    np.mean(running_loss[-100:]),
+                    "training loss",
+                    np.mean(running_loss),
+                    epoch * self.trn_sample + i,
                 )
 
         epoch_loss = np.mean(running_loss)
@@ -157,7 +152,9 @@ class Trainer:
 
         with torch.no_grad():
             # for i, batch_data in enumerate(loader, 1):
-            for _, batch_data in enumerate(tqdm.tqdm(loader, total=self.val_sample, desc="Validation", leave=False)):
+            for _, batch_data in enumerate(
+                tqdm.tqdm(loader, total=int(self.val_sample / self.batch_size), desc="Validation", leave=False)
+            ):
                 inputs = batch_data[0].to(self.device)
                 labels = batch_data[1].to(self.device)
 
