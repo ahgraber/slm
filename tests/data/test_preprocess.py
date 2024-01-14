@@ -10,6 +10,7 @@ import spacy
 
 from slm.data.preprocess import (
     clean_wiki_articles,
+    parse_ngrams,
     parse_sentences,
     parse_words,
     split_sentences_nltk,
@@ -41,6 +42,18 @@ def testcases():
             "a",
             "test",
             ".",
+        ],
+        "bigrams": [
+            "This is",
+            "is a",
+            "a test",
+            "test .",
+            ". It",
+            "It is",
+            "is only",
+            "only a",
+            "a test",
+            "test .",
         ],
     }
 
@@ -92,6 +105,15 @@ class TestParseWords:
         results = parse_words(record=testcases["paragraph"])
 
         for r, s in zip(results, testcases["words"]):
+            # pipeline includes normalization
+            assert r == s.lower()
+
+
+class TestParseNGrams:
+    def test_split(self, testcases):
+        results = parse_ngrams(record=testcases["paragraph"], n=2)
+
+        for r, s in zip(results, testcases["bigrams"]):
             # pipeline includes normalization
             assert r == s.lower()
 

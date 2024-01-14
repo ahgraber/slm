@@ -8,7 +8,7 @@ import pickle
 import random
 import sys
 
-from tqdm import tqdm
+import tqdm
 
 import numpy as np
 import pandas as pd
@@ -309,7 +309,7 @@ ds = ds.map(lambda batch: tokenize_batch(batch, tokenizer=tokenizer), **map_kwar
 
 # %%
 # approx 9.5 hrs
-n_tokens = [len(record["ids"]) for record in tqdm(iter(ds), total=sum(dsamples))]
+n_tokens = [len(record["ids"]) for record in tqdm.tqdm(iter(ds), total=sum(dsamples))]
 
 # %% [markdown]
 # ## Sequence Stats

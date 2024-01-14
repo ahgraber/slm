@@ -36,7 +36,14 @@ specifically [Let's build GPT: from scratch, in code, spelled out](https://www.y
 - Modern LLM -> Per 'mamba' paper, use current SOTA architecture "rotary embedding, SwiGLU MLP, RMSNorm instead of LayerNorm, no linear bias, and higher learning rates"
 - Mamba LLM
 - Given scaling laws expectations [1](https://arxiv.org/abs/2001.08361), [2](https://blog.eleuther.ai/transformer-math/), [3](https://arxiv.org/abs/2203.15556), what is the optimal dataset and model params given my compute (RTX 3090)?
-  Is it possible to reduce model compute requirements from full RTX 3090 --> CPU?
+  - Chinchilla: an compute-optimal ratio of 20:1 for tokens to model parameters, or 1.7 tokens per parameter
+  - Is it possible to reduce model compute requirements from full RTX 3090 --> CPU?
+  - [what size model can I train?](https://datascience.stackexchange.com/questions/117444/what-size-language-model-can-you-train-on-a-gpu-with-x-gb-of-memory)
+  - [gpu requirements for training](https://medium.com/@plthiyagu/calculate-gpu-requirements-for-your-llm-training-7122a3700547)
+  - [huggingface docs](https://huggingface.co/docs/transformers/perf_train_gpu_one#anatomy-of-models-memory)and [repo](https://github.com/huggingface/transformers/issues/14608#issuecomment-1004392537)
+  - [distributed pipelines](https://lilianweng.github.io/posts/2021-09-25-train-large/)
+  - [titan rtx vs 3090 benchmarks](https://github.com/eugeneware/benchmark-transformers)
+  - [FLOP calculus](https://medium.com/@dzmitrybahdanau/the-flops-calculus-of-language-model-training-3b19c1f025e4)
 - Given easily-available training sets, how does `SLM` perform on bias and toxicity?
 
 ## Notes on Infrastructure

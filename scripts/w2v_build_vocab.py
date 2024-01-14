@@ -9,7 +9,7 @@ from pathlib import Path
 import pickle
 import sys
 
-from tqdm import tqdm
+import tqdm
 
 sys.path.insert(0, str(Path(__file__ + "/../../").resolve()))
 from slm.data import constants  # NOQA: E402
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     logger.info("Begin processing dataset & counting...")
     iterds = iter(dset)
     counter = collections.Counter()
-    for record in tqdm(iterds, total=dsamples):
+    for record in tqdm.tqdm(iterds, total=dsamples):
         counter.update(parse_words(record[key]))
         counter.update(parse_ngrams(record[key], 2))
         counter.update(parse_ngrams(record[key], 3))

@@ -69,7 +69,7 @@ extend-exclude = [
 extend-include = ["*.ipynb"]
 
 # Directories with source code
-src = ["notebooks", "src", "tests"]
+src = ["notebooks", "scripts", "slm", "tests"]
 
 # Max line length
 line-length = 119
@@ -221,7 +221,7 @@ python_files = [
     "*_test.py",
     "tests.py",
 ]
-pythonpath = "src"
+pythonpath = "slm"
 testpaths = [
     "tests",
 ]
@@ -230,11 +230,11 @@ testpaths = [
 
 # --- coverage ---------------------------------------------------------------
 [tool.coverage.paths]
-source = ["src", "*/site-packages"]
+source = ["slm", "*/site-packages"]
 
 [tool.coverage.run]
 branch = true
-source = ["src"]
+source = ["slm"]
 
 [tool.coverage.report]
 show_missing = true

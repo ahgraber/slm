@@ -7,6 +7,7 @@ import re
 from typing import Any, Callable, Optional, Union
 
 from nltk.tokenize import TreebankWordDetokenizer
+from nltk.util import ngrams
 
 import datasets
 from tokenizers import (
@@ -82,13 +83,28 @@ def parse_words(
     record: str,
     normalizer: normalizers.Normalizer = normalizer,
     splitter: pre_tokenizers.PreTokenizer = word_splitter,
-) -> list[list[str]]:
+) -> list[str]:
     """Apply standard text normalization and split blob into words.
 
     Useful for extracting similar WordLevel tokens if Tokenizer cannot be used due to lack of Vocabulary.
     """
     record = normalizer.normalize_str(record)
     return [word for word, _span in splitter.pre_tokenize_str(record)]
+
+
+def parse_ngrams(
+    record: str,
+    n: int = 2,
+    normalizer: normalizers.Normalizer = normalizer,
+    splitter: pre_tokenizers.PreTokenizer = word_splitter,
+) -> list[str]:
+    """Apply standard text normalization and split blob into words, then identify ngrams.
+
+    Useful for extracting similar WordLevel tokens if Tokenizer cannot be used due to lack of Vocabulary.
+    """
+    record = normalizer.normalize_str(record)
+    words = [word for word, _span in splitter.pre_tokenize_str(record)]
+    return [" ".join(gram) for gram in ngrams(words, 2)]
 
 
 # %%
@@ -224,7 +240,7 @@ def prep_data(
 def load_data(
     managed_ds: Optional[str] = None,
     data_dir: Optional[Union[Path, str]] = None,
-):
+) -> datasets.Dataset:
     """Load dataset from local files / managed datasets.
 
     NOTE: Does not include final normalization or tokenization.

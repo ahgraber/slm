@@ -11,8 +11,6 @@ import re
 import sys
 from typing import Optional, Union
 
-from tqdm import tqdm
-
 from nltk.tokenize import TreebankWordDetokenizer
 
 import datasets

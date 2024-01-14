@@ -119,7 +119,9 @@ class Vocab:
 
     def _update_vocab(self):
         """Update vocab and infrequent words based on current counts."""
-        self.vocab = [word for word, _count in self.__sort_counter(self.counter.most_common(self.size))]
+        self.vocab = [
+            word for word, _count in self.__sort_counter(self.counter.most_common(self.size - len(self._specials)))
+        ]
         self._infrequent = {word for word, count in self.counter.items() if count < self.min_freq}
         if len(self._specials) > 0:
             self.vocab = self._specials + self.vocab

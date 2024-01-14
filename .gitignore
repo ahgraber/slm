@@ -10,6 +10,7 @@ artifacts/**
 # data/processed/**
 logs/**
 notebooks/**
+runs/
 src/**/*.yml
 src/**/*.yaml
 writeup/**

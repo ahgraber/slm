@@ -1,57 +1,47 @@
 # %%
-from collections import Counter, OrderedDict
-from functools import partial
+import collections
+import functools
 import itertools
+import json
 import logging
 import math
 import os
 from pathlib import Path
 import pickle
 import random
-import re
-import string
 import sys
-from typing import Any, Callable, Iterable, Optional, Union
-import unicodedata
+from typing import Any, Callable, Iterable, Literal, Optional, Union
 
-import nltk
-
-# from torchtext.vocab import Vocab, build_vocab_from_iterator
-# may have to include `.env` file at project root containing `PYTHONPATH="./../src"`
-# sys.path.insert(0, str(Path(__file__ + "/../../src").resolve()))
-from slm.preprocess import (  # NOQA: E402
-    SentencePreTokenizer,
-    blob_to_sentences,
-    pipeline,
-    sentences_to_words,
-    wiki_remove_headings,
-    wiki_truncate_appedices,
-)
-from slm.utils import flatten, get_project_root, init_nltk, init_spacy  # NOQA: E402
-from slm.word2vec.config import W2VConfig  # NOQA: E402
-from slm.word2vec.vocab import Vocab  # NOQA: E402
-import spacy
-from tqdm import tqdm
+import tqdm
 
 import numpy as np
+import pandas as pd
 
 import datasets
-from tokenizers import Regex, Tokenizer, decoders, models, normalizers, pre_tokenizers, processors, trainers
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
-from torchtext.data.utils import get_tokenizer
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard.writer import SummaryWriter
+
+# may have to include `.env` file at project root containing `PYTHONPATH="./../src"`
+sys.path.insert(0, str(Path(__file__ + "/../../").resolve()))
+from slm.data import constants, preprocess  # NOQA: E402
+from slm.utils import get_project_root, torch_device  # NOQA: E402
+from slm.word2vec import loaders, models, trainer, vocab  # NOQA: E402
 
 # %%
 logger = logging.getLogger(__name__)
 LOG_FMT = "%(asctime)s - %(levelname)-8s - %(name)s - %(funcName)s:%(lineno)d - %(message)s"  # noqa: N806
 logging.basicConfig(format=LOG_FMT)
 logging.captureWarnings(True)
-
 logger.setLevel(logging.INFO)
+
+slm_logger = logging.getLogger("slm")
+slm_logger.setLevel(logging.INFO)
 
 # %%
 ROOT_DIR = get_project_root()
+ARTIFACT_DIR = ROOT_DIR / "artifacts"
 DATA_DIR = ROOT_DIR / "data"
 
 # %%
@@ -65,272 +55,273 @@ if torch.cuda.is_available():
 if torch.backends.mps.is_available():
     torch.mps.manual_seed(SEED)
 
-# %%
-init_nltk(model="punkt", savedir=DATA_DIR / "nltk")
-init_spacy(model="en_core_web_sm")
 
 # %% [markdown]
-# ## Source data
+# # Word2vec
 #
-# Huggingface's `datasets` package provides easy access to predefined data.
+# ## Preprocessing
 #
-# These are type `datasets.arrow_dataset.Dataset` (https://huggingface.co/docs/datasets/main/en/about_arrow)
-# Loading these creates a memory map but does not _actually_ load files into memory
-# We can also leverage dataset functionality like map() and filter() to apply batched transformations
-# or even use an IterableDataset to lazily apply transformations as needed
-
-# %%
-dslist = [
-    ("bookcorpus", None),
-    ("c4", "realnewslike"),
-    ("wikimedia/wikisource", "20231201.en"),
-    # ("wikimedia/wikipedia", "20231101.en"),
-]
-# wiki = datasets.load_dataset(
-#     "wikimedia/wikipedia",
-#     name="20231101.en",
-#     split="train[:256]",
-#     download_mode="reuse_cache_if_exists",  # rebuild dataset obj every time
-#     verification_mode="basic_checks",
-#     cache_dir=DATA_DIR / "wikipedia",
-#     num_proc=4,
-# )
-
-# %% [markdown]
-# ### Sample (wikipedia)
+# Run `w2v_clean_data` and `w2v_build_vocab` scripts first!
+# These clean the data, and build a vocabulary we can load below.
 #
-# ```py
-# {'id': '1',
-#  'url': 'https://simple.wikipedia.org/wiki/April',
-#  'title': 'April',
-#  'text': 'April is the fourth month...'
-# }
-# ```
+# ```sh
+# # preprocess - normalize and sentence-split
+# python scripts/w2v_clean_data.py -d bookcorpus
+# python scripts/w2v_clean_data.py -d commoncrawl
+# python scripts/w2v_clean_data.py -d wikipedia
 #
-# ### Schema
-#
-# ```txt
-# id (str): ID of the article.
-# url (str): URL of the article.
-# title (str): Title of the article.
-# text (str): Text content of the article.
+# # build vocab files
+# python scripts/w2v_build_vocab.py -d bookcorpus
+# python scripts/w2v_build_vocab.py -d commoncrawl
+# python scripts/w2v_build_vocab.py -d wikipedia
 # ```
 
 # %%
-ds_kwargs = {
-    "split": "train",
-    "download_mode": "force_redownload",  # if corrupted
-    # "download_mode": "reuse_cache_if_exists",  # for testing
-    # "download_mode": "reuse_dataset_if_exists",  # for prod
-    # "verification_mode": "basic_checks",
-    "verification_mode": "all_checks",
-    "num_proc": 8,  # only if streaming == False
-}
+# load and combine vocabs
+vocabulary = vocab.Vocab(
+    size=60_000, min_freq=5, unk_token=vocab.UNK_TOKEN, special_tokens=[vocab.START_TOKEN, vocab.END_TOKEN]
+)
+for pkl in (ARTIFACT_DIR / "vocab").glob("*_vocab.pkl"):
+    logger.debug(f"Loading {pkl}")
+    with pkl.open("rb") as f:
+        _v = pickle.load(f)
+    vocabulary.update(_v.counter)
+
+logger.info("Combined vocab ")
+
+
+# %%
+# load preprocessed datasets
+split = "train"
 key = "text"
+map_kwargs = constants.MAP_KWARGS
+map_kwargs["input_columns"] = key
+map_kwargs["batch_size"] = 128
+
+trn_pct, val_ptc, tst_pct = 0.75, 0.15, 0.10
+trn_dsets, val_dsets, tst_dsets = [], [], []
+trn_sample, val_sample, tst_sample = [], [], []
+
+for dataset in ["bookcorpus"]:  # , "commoncrawl"]:
+    ds = preprocess.load_data(dataset)
+
+    nrows = ds.num_rows
+    logger.info(f"{dataset} has {nrows} records")
+
+    split = ds.train_test_split(train_size=int(nrows * trn_pct), seed=SEED)
+    trn_ds = split["train"]
+
+    split = split["test"].train_test_split(test_size=int(nrows * tst_pct), seed=SEED)
+    val_ds = split["train"]
+    tst_ds = split["test"]
+
+    trn_sample.append(trn_ds.num_rows)
+    val_sample.append(val_ds.num_rows)
+    tst_sample.append(tst_ds.num_rows)
+
+    trn_dsets.append(trn_ds)
+    val_dsets.append(val_ds)
+    tst_dsets.append(tst_ds)
+
 
 # %%
-wiki = datasets.load_dataset(
-    "wikimedia/wikipedia",
-    name="20231101.en",
-    # data_dir=DATA_DIR / "wikipedia",
-    # cache_dir=DATA_DIR / "wikipedia",
-    **ds_kwargs,
+# proportionally interleave datasets
+# NOTE: probably requires iterable_datasets
+trn_ds = datasets.interleave_datasets(
+    [ds.to_iterable_dataset() for ds in trn_dsets],
+    probabilities=[i / sum(trn_sample) for i in trn_sample],  # sample according to relative sizes
+    seed=SEED,
+    stopping_strategy="all_exhausted",
 )
-# wiki_len = (
-#     datasets.load_dataset_builder("wikimedia/wikipedia", "20231101.en").info.splits[ds_kwargs["split"]].num_examples
-# )
-# %%
-wiki = wiki.to_iterable_dataset()
-wiki = wiki.select_columns(key)
-# wiki = wiki.shuffle(SEED, buffer=10000)
-# if isinstance(wiki, datasets.Dataset):
-#     wiki = wiki.flatten_indices()
-
-
-# %% [markdown]
-# ## Preprocess
-#
-# For word2vec, preprocessing (moving from raw text to tensors ready for model input involves:
-#
-# - normalization
-# - [optional] adding separator tokens at sentence boundaries
-# - pre-token splitting
-# - vocabulary creation
-# - word-to-token conversion
-#
-# Ideally, we will create a repeatable preprocessing pipeline that uses generators to avoid
-# loading or expanding the entire dataset in-memory
-#
-# Ref: https://huggingface.co/learn/nlp-course/chapter6/8?fw=pt#building-a-tokenizer-block-by-block
-
-
-# %%
-# normalize control chars
-prenormalizer = normalizers.Replace(Regex(r"[\p{Other}&&[^\n\t\r]]"), "\n")
-# use nltk punkt sentence splitter
-sentence_splitter = pre_tokenizers.PreTokenizer.custom(SentencePreTokenizer())
-
-# define tokenizer here for use both in building vocab and tokenizeing
-tokenizer = Tokenizer(models.WordLevel(unk_token="<UNK>"))
-tokenizer.normalizer = normalizers.Sequence(
-    [
-        normalizers.NFKD(),
-        normalizers.StripAccents(),
-        normalizers.Lowercase(),
-        normalizers.Replace(Regex(r"[\p{Other}&&[^\n\t\r]]"), ""),  # normalize control chars
-        normalizers.Replace(Regex(r"[\s]"), " "),  # normalize whitespace
-    ]
+val_ds = datasets.interleave_datasets(
+    [ds.to_iterable_dataset() for ds in val_dsets],
+    probabilities=[i / sum(trn_sample) for i in trn_sample],  # sample according to relative sizes
+    seed=SEED,
+    stopping_strategy="all_exhausted",
 )
-tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()  # split on whitespace or non-word non-space character
-tokenizer.processor = processors.TemplateProcessing(  # add separators
-    single="<SEP> $0 <SEP>",
-    # pair="[CLS] $A [SEP] $B:1 [SEP]:1",
-    special_tokens=[("<SEP>", 1)],  # ensure that tokenizer.vocab()["<SEP>"] == 1
+tst_ds = datasets.interleave_datasets(
+    [ds.to_iterable_dataset() for ds in tst_dsets],
+    probabilities=[i / sum(trn_sample) for i in trn_sample],  # sample according to relative sizes
+    seed=SEED,
+    stopping_strategy="all_exhausted",
 )
+trn_ds = trn_ds.select_columns(key)
+val_ds = val_ds.select_columns(key)
+tst_ds = tst_ds.select_columns(key)
+
+trn_sample = sum(trn_sample)
+val_sample = sum(val_sample)
+tst_sample = sum(tst_sample)
+
+del trn_dsets, val_dsets, tst_dsets
+
+# %%
+tokenizer = preprocess.w2v_tokenizer(vocab=vocabulary)
+trn_ds = trn_ds.map(lambda batch: preprocess.tokenize_batch(batch, tokenizer=tokenizer), **map_kwargs)
+val_ds = val_ds.map(lambda batch: preprocess.tokenize_batch(batch, tokenizer=tokenizer), **map_kwargs)
+tst_ds = tst_ds.map(lambda batch: preprocess.tokenize_batch(batch, tokenizer=tokenizer), **map_kwargs)
+# NOTE: from w2v stats investigation, it takes 8-10 hrs to traverse iterabledataset
+
+# NOTE: if map dataset, add num_proc>1 for multiprocessing
+# ds.set_transform(lambda batch: tokenize_batch(batch[key]), columns=[key])
+# # ds[0]
+
+# each record now has attributes: text, ids, tokens, attention_mask
+
+# %%
+# investigate subsampling of frequent words
+# loaders.plot_subsample_weights(vocabulary)
 
 
 # %%
-# Map preprocessing functions to dataset
-# https://huggingface.co/docs/datasets/main/en/package_reference/main_classes#datasets.Dataset.map
-# https://huggingface.co/docs/datasets/main/en/package_reference/main_classes#datasets.IterableDataset.map
-# https://huggingface.co/docs/datasets/main/en/about_map_batch#map
+# NOTE:
+# For the experiments reported ..., we used
+# three training epochs with stochastic gradient descent and backpropagation.
+# We chose starting learning rate 0.025 and decreased it linearly.
 
-# wrap preprocessing fn in partial so its only input is a list of text as a positional arg
-preprocess = partial(
-    pipeline,
-    key=key,
-    fn=blob_to_sentences,
-    b2s_kwargs={"is_wiki": True, "normalizer": prenormalizer, "splitter": sentence_splitter},
+# %%
+epochs = 50
+model = models.CBOW_Model(vocab=vocabulary)
+optimizer = torch.optim.Adam(params=model.parameters(), lr=0.025)
+lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
+    optimizer,
+    lr_lambda=lambda epoch: (epochs - epoch) / epochs,
 )
-tokenize = partial(
-    pipeline,
-    key=key,
-    fn=sentences_to_words,
-    s2w_kwargs={"normalizer": tokenizer.normalizer, "splitter": tokenizer.pre_tokenizer},
-)
-# TODO: split pipeline into 2 -
-# 1. needs to do wiki cleaning, split into sentences
-# 2. applies standard normalization and splits into words
-# we need 1 for both vocab and tokenization pipelines
-# while 2 is only needed for vocab (it _is_ the tokenization pipeline)
+device = torch_device()
 
-# if wiki is iterabledataset, preprocessor executes only as batch is called
-batch_size = 1000
-wiki = wiki.map(preprocess, input_columns=key, batched=True, batch_size=batch_size)
-wiki = wiki.map(tokenize, input_columns=key, batched=True, batch_size=batch_size)
-
-# %%
-ds = iter(wiki)
-counter = Counter()
-for blob in tqdm(ds, total=wiki_len):
-    counter.update(flatten(blob[key]))
-else:
-    print("Done")
-
-# %%
-counter
-
-# %%
-# NOTE: stalls on 560417
-
-# %%
-vocab = Vocab()
-vocab.update(counter)
-
-
-# %%
-with (DATA_DIR / "wiki_vocab.pkl").open("wb") as f:
-    pickle.dump(vocab, f)
-
-# %%
-
-
-# %%
-
-
-# %%
-
-# %%
-books = datasets.load_dataset(
-    "bookcorpus",
-    # cache_dir=DATA_DIR / "bookcorpus",
-    **ds_kwargs,
-)
-books_len = datasets.load_dataset_builder("bookcorpus").info.splits[ds_kwargs["split"]].num_examples
-
-# %%
-c4 = datasets.load_dataset(
-    "c4",
-    name="realnewslike",  # "en"
-    # cache_dir=DATA_DIR / "c4",
-    **ds_kwargs,
-)
-c4_len = datasets.load_dataset_builder("c4", "realnewslike").info.splits[ds_kwargs["split"]].num_examples
-
-
-# %%
-
-# %%s
-
-# %% [markdown]
-# ## Tokenize
-#
-# Ref: https://huggingface.co/learn/nlp-course/chapter6/8?fw=pt#building-a-tokenizer-block-by-block
-
-# %%
-tokenizer = Tokenizer(models.WordLevel(unk_token="<UNK>"))
-# use normalizer, pre_tokenizer defined above during Vocab pipeline
-tokenizer.normalizer = normalizer
-tokenizer.pre_tokenizer = pre_tokenizer  # split on whitespace or non-word non-space character
-tokenizer.processor = processors.TemplateProcessing(  # add separators
-    single="<SEP> $0 <SEP>",
-    # pair="[CLS] $A [SEP] $B:1 [SEP]:1",
-    special_tokens=[("<SEP>", 1)],  # ensure that tokenizer.vocab()["<SEP>"] == 1
+cbow_trainer = trainer.Trainer(
+    model=model,
+    batch_size=constants.BATCH_SIZE,
+    epochs=50,
+    collate_fn=loaders.CBOW(vocabulary),
+    trn_dataset=trn_ds,
+    trn_sample=trn_sample,
+    val_dataset=val_ds,
+    val_sample=val_sample,
+    criterion=nn.CrossEntropyLoss(),
+    optimizer=optimizer,
+    lr_scheduler=lr_scheduler,
+    device=torch_device(),
+    checkpoint_frequency=5,
+    log_dir=ROOT_DIR / "runs",
+    model_dir=ARTIFACT_DIR,
+    model_name="CBOW",
 )
 
 # %%
-# trainer can build vocab
-trainer = trainers.WordLevelTrainer(
-    vocab_size=50_000,
-    # min_frequency=3,
-    show_progress=True,
-    special_tokens=["<UNK>", "<SEP>"],
-)
+cbow_trainer.train()
+print("Training finished.")
 
-
-def batch_corpus_generator(dataset: str, key: str = "text", batchsize: int = 64):
-    """Generate batches from corpus dataset."""
-    for i in range(0, len(dataset), batchsize):
-        yield dataset[i : i + batchsize][key]
-
-
-tokenizer.train_from_iterator(
-    batch_corpus_generator(dataset=wiki, key="text", batchsize=10), trainer=trainer, length=len(wiki)
-)
+cbow_trainer.save_model()
+cbow_trainer.save_loss()
 
 # %%
-print(tokenizer.get_vocab_size())
-tokenizer.get_vocab()
+
+# %%
 
 
 # %%
-# tokenize
-output = tokenizer.encode(ARISTOTLE)
+# def calc_sample_table(vocab: vocab.Vocab, p: float = 0.75) -> list[str]:
+#     """Calculate negative sampling probability for all words in vocab and populate table with proportional membership."""
+
+#     words, counts = zip(*vocab.counter.most_common(vocab.size))
+#     denominator = sum(counts) ** p
+
+#     table_size = vocab.size * 100  # approximate table length
+#     table = [
+#         [word] * int(prob * table_size)
+#         for word, prob in zip(
+#             words,
+#             (np.array(counts) ** p) / denominator,
+#         )
+#     ]
+
+#     return list(itertools.chain.from_iterable(table))
+
+
+# def collate_skipgram(
+#     vocab: vocab.Vocab,
+#     batch: list[dict[str, Any]],
+#     context_len: int = N_CONTEXT,
+#     subsample: bool = True,
+#     neg_sample: bool = True,
+# ):
+#     """Collate function for skipgram word2vec model to be used with Pytorch Dataloader."""
+
+#     if subsample:
+#         word2subsample_wt = calc_subsample_weights(
+#             vocab, t=10e-5
+#         )  # TODO: pass as arg? don't calculate on each call to collate
+
+#     sample_table = calc_sample_table(vocab, p=0.75)  # TODO: pass as arg? don't calculate on each call to collate
+
+#     batch_input, batch_output = [], []
+#     for record in batch:
+#         ids_seq = record["ids"]
+
+#         if len(ids_seq) < context_len * 2 + 1:
+#             continue
+#         if MAX_SEQUENCE_LENGTH:
+#             ids_seq = ids_seq[:MAX_SEQUENCE_LENGTH]
+
+#         # Subsampling Frequent Words
+#         # Probabilistically remove frequent words from sequence _prior to_ generating contexts (effectively increasing window size)
+#         if subsample:
+#             ids_seq = loaders.subsample_freq_words(record, word2sswt=word2sswt)
+
+#         # Dynamic window size:
+#         # Since the more distant words are usually less related to the current word than those close to it,
+#         # give less weight to the distant words by sampling less from those words in our training examples.
+#         # For each training word, randomly select a number R in range <1; C>,
+#         # and use R words from history and R words from the future of the current word as correct labels".
+#         n = random.randint(1, context_len)
+#         for idx in range(len(ids_seq) - n * 2):
+#             context = ids_seq[idx : (idx + context_len * 2 + 1)]
+#             center = context.pop(context_len)  # pop central token out of context window
+
+#             positive_samples = [[tok, 1] for tok in context]
+
+#             # Negative Sampling
+#             negative_samples = [[vocab[ns], 0] for ns in random.sample(sample_table, k=5)]  # TODO:k as arg
+#             # TODO: ensure that negative_samples is always len k, does not contain duplicates, and does not contain words from positive_samples
+
+#             batch_input.append(center)
+#             batch_output.append(positive_samples + negative_samples)
+#             assert set([len(x) for x in batch_output]) == 1
+
+#     batch_input = torch.tensor(batch_input, dtype=torch.long)
+#     batch_output = torch.tensor(batch_output, dtype=torch.long)
+#     return batch_input, batch_output
+
+
+# class SkipGram_Model(nn.Module):
+#     """
+#     Implementation of Skip-Gram model described in paper:
+#     https://arxiv.org/abs/1301.3781
+#     """
+
+#     def __init__(self, vocab_size: int):
+#         super(SkipGram_Model, self).__init__()
+#         self.embeddings = nn.Embedding(
+#             num_embeddings=vocab_size,
+#             embedding_dim=EMBED_DIMENSION,
+#             max_norm=EMBED_MAX_NORM,
+#         )
+#         self.linear = nn.Linear(
+#             in_features=EMBED_DIMENSION,
+#             out_features=vocab_size,
+#         )
+
+#     def forward(self, inputs_):
+#         x = self.embeddings(inputs_)
+#         x = self.linear(x)
+#         return x
+
 
 # %%
-print(output.tokens)
-
-# %%
-print(output.ids)
-# %%
-print(tokenizer.decode(output.ids))
+# see https://github.com/ddehueck/skip-gram-negative-sampling for example with tensorboard
+# see https://github.com/lukysummer/SkipGram_with_NegativeSampling_Pytorch/blob/master/SkipGram_NegativeSampling.ipynb for example of using pytorch for negative sampling
 
 
 # %%
-# TODO: interleave all datasets
-from datasets import interleave_datasets
-
-wiki = load_dataset(..., streaming=True)
-books = load_dataset(..., streaming=True)
-c4 = load_dataset(..., streaming=True)
-ds = interleave_datasets([wiki, books, c4])
+# use PCA or Multiple Linear Dscriminant Analysis to perfectly align "gender" and "royalty" axes for king - man + woman = queen?
