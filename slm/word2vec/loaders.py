@@ -1,10 +1,7 @@
 # %%
-import itertools
 import logging
-import math
 import os
 from pathlib import Path
-import pickle
 import random
 from typing import Any, Callable, Iterable, Optional, Union
 
@@ -15,9 +12,6 @@ import torch
 
 import matplotlib.pyplot as plt
 
-# # may have to include `.env` file at project root containing `PYTHONPATH="./../src"`
-# sys.path.insert(0, str(Path(__file__ + "/../../").resolve()))
-# from slm.utils import flatten, get_project_root
 from slm.word2vec import vocab
 
 # %%
