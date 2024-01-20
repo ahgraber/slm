@@ -102,9 +102,12 @@ def parse_ngrams(
 
     Useful for extracting similar WordLevel tokens if Tokenizer cannot be used due to lack of Vocabulary.
     """
+    from string import punctuation
+
     record = normalizer.normalize_str(record)
     words = [word for word, _span in splitter.pre_tokenize_str(record)]
-    return [" ".join(gram) for gram in ngrams(words, 2)]
+    n_grams = [" ".join(gram) for gram in ngrams(words, n)]
+    return [gram for gram in n_grams if punctuation not in gram]
 
 
 # %%
