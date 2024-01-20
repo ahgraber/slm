@@ -29,7 +29,7 @@ def sliding_window_contexts(seq: list[int], n: int):
     # get all start idx that have sufficient tokens for full context window
     width = n * 2
     if width >= len(seq):
-        logger.debug("Warning: context width exceeds bounds of available sequence length.")
+        logger.debug("Warning: context width exceeds bounds of available sequence length.  Returning empty list.")
     valid_starts = len(seq) - width  # start indices allowing sufficient tokens for full context window
     contexts = [seq[start : (start + width + 1)] for start in range(valid_starts)]
     return contexts

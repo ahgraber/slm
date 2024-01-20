@@ -9,23 +9,42 @@ from slm.word2vec import vocab
 
 
 # %%
-def test_sliding_window_contexts():
-    id_seq = list(range(10))
-    expected_3 = [
-        [0, 1, 2, 3, 4, 5, 6],
-        [1, 2, 3, 4, 5, 6, 7],
-        [2, 3, 4, 5, 6, 7, 8],
-        [3, 4, 5, 6, 7, 8, 9],
-    ]
-    expected_4 = [
-        [0, 1, 2, 3, 4, 5, 6, 7, 8],
-        [1, 2, 3, 4, 5, 6, 7, 8, 9],
-    ]
-    expected_20 = []
+class TestSlidingWindowContexts:
+    def test_empty_sequence(self):
+        # Arrange
+        seq = []
+        n = 5
+        expected_output = []
 
-    assert dl.sliding_window_contexts(id_seq, n=3) == expected_3
-    assert dl.sliding_window_contexts(id_seq, n=4) == expected_4
-    assert dl.sliding_window_contexts(id_seq, n=20) == expected_20
+        # Act & Assert
+        output = dl.sliding_window_contexts(seq, n)
+        assert output == expected_output, "Incorrect result for empty sequence"
+
+    def test_sequence_shorterthan_window(self):
+        # Arrange
+        seq = [1, 2, 3]
+        n = 20
+        expected_output = []
+
+        # Act & Assert
+        output = dl.sliding_window_contexts(seq, n)
+        assert output == expected_output, "Incorrect result for sequence outside window"
+
+    def test_sequence_within_window(self):
+        id_seq = list(range(10))
+        expected_3 = [
+            [0, 1, 2, 3, 4, 5, 6],
+            [1, 2, 3, 4, 5, 6, 7],
+            [2, 3, 4, 5, 6, 7, 8],
+            [3, 4, 5, 6, 7, 8, 9],
+        ]
+        expected_4 = [
+            [0, 1, 2, 3, 4, 5, 6, 7, 8],
+            [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        ]
+
+        assert dl.sliding_window_contexts(id_seq, n=3) == expected_3, "Incorrect result for sequence within window"
+        assert dl.sliding_window_contexts(id_seq, n=4) == expected_4, "Incorrect result for sequence within window"
 
 
 def test_calc_subsample_weights():
