@@ -1,44 +1,91 @@
+---
 name: slm
 channels:
   - conda-forge
-  - pytorch
   - huggingface
+  - pytorch
 dependencies:
-  - python=3.11.*
-  - pip
+  # see deprecation windows:
+  # https://scientific-python.org/specs/spec-0000/#support-window
+  - python[version='>=3.10,<3.12']
   - cython
+  - pip
   - ipykernel
   - ipython
+  - ipywidgets
+  - joblib
   - notebook
-  # major dependencies
-  - numpy
-  - pandas
-  - scipy
-  - scikit-learn
-  - sklearn-pandas
-  - nltk
-  - spacy
-  ## pytorch / transformers
-  - conda-forge:safetensors #==0.3.3
-  - conda-forge:tensorboard
-  - conda-forge:tokenizers #>0.13,<0.14
-  - conda-forge:torchmetrics #>=1.1.1,<1.2
-  - conda-forge:sentence-transformers
-  - conda-forge:transformers #>4.28,<4.29
-  - huggingface:datasets
-  - pytorch:pytorch>2.0
-  # - pytorch:torchaudio #>=2.0,<2.1
-  - pytorch:torchdata>=0.7,<0.8
-  - pytorch:torchtext>=0.16,<0.17
-  # - pytorch:torchvision #>=0.15,<0.16
-  - rust
-  ## supporting packages
-  # - colorama  # or rich
+  - numpy[version='>=1.24,<1.25']
+  - pandas[version='>=2.0,<2.1']
   - openpyxl
-  ## plotting
+  - pandera
+  - scikit-learn
+  - scipy[version='>=1.10.*,<1.11']
+  - statsmodels
+  ### LLM
+  - conda-forge::langchain[version='>=0.1']
+  - conda-forge::llama-index[version='>=0.9,<1']
+  - nltk
+  - openai
+  - openapi-core
+  - openapi-schema-validator
+  - sentencepiece
+  - spacy
+  - tiktoken
+  - huggingface::datasets[version='>=2.15.*,<3']
+  - conda-forge::safetensors
+  - conda-forge::sentence-transformers
+  - conda-forge::huggingface_hub[version='>0.15,<1.0']
+  - conda-forge::tokenizers[version='>=0.15.*,<0.16']
+  - conda-forge::transformers[version='>4.34,<4.38']
+  - conda-forge::accelerate
+  - pytorch::pytorch[version='>=2.0.*,<2.2']
+  - pytorch::torchaudio
+  - pytorch::torchdata<0.8 # development paused @0.7
+  - pytorch::torchtext<0.17 # development paused @0.16
+  - pytorch::torchvision
+  - conda-forge::torchmetrics<2
+  - conda-forge::tensorboard
+  - rust
+  ### LLM dependencies
+  # - aiofiles # semantic-kernel
+  # - aiohttp # semantic-kernel
+  - appdirs # ragas
+  # - motor # semantic-kernel
+  # - python-dotenv # semantic-kernel
+  # - prance # semantic-kernel
+  - pysbd # ragas
+  # - regex # semantic-kernel
+  ### plotting
+  - cmcrameri
   - matplotlib
+  - plotly
   - plotnine
   - seaborn
-  - pyyaml
-  ## testing
+  - streamlit
+  ### utilities requirements
+  - fastapi
+  - jinja2
+  - keyring
+  - python-dateutil
+  # - pyodbc
   - pytest
+  - pyyaml
+  - redis-py>=4.5.5
+  # - snowflake-connector-python
+  # - snowflake-snowpark-python # python version incompatibility
+  # - snowflake-sqlalchemy
+  # - sqlalchemy
+  - uvicorn
+  - xlrd
+  # ### azure requirements
+  # - azure-identity
+  # - azure-keyvault-secrets
+  # - azure-cosmos
+  # - azure-storage-blob
+  # - azure-storage-common
+  # - azure-storage-file-share
+  # ### mlflow requirements
+  # - mlflow==2.9.2
+  # - pip:
+  #     - semantic-kernel # <1.0.0
