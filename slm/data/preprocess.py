@@ -94,20 +94,21 @@ def parse_words(
 
 def parse_ngrams(
     record: str,
+    vocab_set: set[str],
     n: int = 2,
-    normalizer: normalizers.Normalizer = normalizer,
-    splitter: pre_tokenizers.PreTokenizer = word_splitter,
+    **words_kwargs,
 ) -> list[str]:
-    """Apply standard text normalization and split blob into words, then identify ngrams.
+    """Identify ngrams.  Vocabulary used to limit combinatorial growth.
 
     Useful for extracting similar WordLevel tokens if Tokenizer cannot be used due to lack of Vocabulary.
     """
     from string import punctuation
 
-    record = normalizer.normalize_str(record)
-    words = [word for word, _span in splitter.pre_tokenize_str(record)]
-    n_grams = [" ".join(gram) for gram in ngrams(words, n)]
-    return [gram for gram in n_grams if punctuation not in gram]
+    def f(gram: tuple[str], vocab_set=vocab_set):
+        return all(map(lambda tok: tok not in punctuation, gram)) and all(map(lambda tok: tok in vocab_set, gram))  # NOQA: C417
+
+    words = parse_words(record, **words_kwargs)
+    return [" ".join(gram) for gram in filter(f, ngrams(words, n))]
 
 
 # %%

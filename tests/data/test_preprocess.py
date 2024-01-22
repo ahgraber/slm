@@ -1,5 +1,6 @@
 # %%
 # TODO: remove slm setup
+from collections import Counter
 from pathlib import Path
 import sys
 
@@ -18,6 +19,7 @@ from slm.data.preprocess import (
     treebank_detokenize,
 )
 from slm.data.sentence_pretokenizer import SentencePreTokenizer
+from slm.word2vec.vocab import Vocab  # NOQA: E402
 
 
 # %%
@@ -47,13 +49,13 @@ def testcases():
             "This is",
             "is a",
             "a test",
-            "test .",
-            ". It",
+            # "test .",
+            # ". It",
             "It is",
             "is only",
             "only a",
             "a test",
-            "test .",
+            # "test .",
         ],
     }
 
@@ -110,8 +112,21 @@ class TestParseWords:
 
 
 class TestParseNGrams:
-    def test_split(self, testcases):
-        results = parse_ngrams(record=testcases["paragraph"], n=2)
+    @pytest.fixture
+    def vocab_set(self, testcases):
+        vocabulary = Vocab(counter=Counter([word.lower() for word in testcases["words"]]))
+        return set(vocabulary.vocab)
+
+    def test_split(self, testcases, vocab_set):
+        results = parse_ngrams(record=testcases["paragraph"], vocab_set=vocab_set, n=2)
+
+        for r, s in zip(results, testcases["bigrams"]):
+            # pipeline includes normalization
+            assert r == s.lower()
+
+    def test_filter(self, testcases, vocab_set):
+        # add a nonsense word to confirm it's filtered out
+        results = parse_ngrams(record=testcases["paragraph"] + "pqwern012385", vocab_set=vocab_set, n=2)
 
         for r, s in zip(results, testcases["bigrams"]):
             # pipeline includes normalization

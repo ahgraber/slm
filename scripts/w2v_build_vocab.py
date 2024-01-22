@@ -58,11 +58,13 @@ if __name__ == "__main__":
     save_file.parent.mkdir(parents=True, exist_ok=True)
 
     if save_file.exists():
-        print("File exists at save path.  Continuing will overwrite existing file.")
+        print("File exists at save path.  Continuing will remove and replace existing file.")
         response = str(input("Continue? [y/N]  "))
         if response.lower() not in ["y", "yes"]:
             print("Exiting at user request.")
             sys.exit(0)
+        else:
+            save_file.unlink()  # delete file
 
     map_kwargs = constants.MAP_KWARGS
     map_kwargs["input_columns"] = key
@@ -77,19 +79,33 @@ if __name__ == "__main__":
     dset = dset.to_iterable_dataset(num_shards=constants.N_SHARDS)
 
     logger.info("Begin processing dataset & counting...")
-    iterds = iter(dset)
-    counter = collections.Counter()
-    for record in tqdm.tqdm(iterds, total=dsamples):
-        counter.update(parse_words(record[key]))
-        counter.update(parse_ngrams(record[key], 2))
-        counter.update(parse_ngrams(record[key], 3))
-    else:
-        logger.info("Counting complete")
+    for n in [1, 2, 3]:
+        iterds = iter(dset)
+        counter = collections.Counter()
+        if n == 1:
+            for record in tqdm.tqdm(iterds, desc="Words", total=dsamples):
+                counter.update(parse_words(record[key]))
+        else:
+            if save_file.exists():
+                with save_file.open("rb") as f:
+                    _v = pickle.load(f)  # NOQA: S301
+                    vocab_set = set(_v.vocab)
+                    del _v
+            else:
+                vocab_set = set()
 
-    logger.info("Creating vocab...")
-    vocab = Vocab(collections.Counter(dict(itertools.takewhile(lambda itm: itm[1] > 1, counter.items()))))
-    logger.info("Saving vocab...")
-    with save_file.open("wb") as f:
-        pickle.dump(vocab, f)
+            for record in tqdm.tqdm(iterds, desc=f"{n}_grams", total=dsamples):
+                counter.update(parse_ngrams(record[key], vocab_set=vocab_set, n=n))
+
+        logger.info("Creating vocab...")
+        vocabulary = Vocab(collections.Counter(dict(itertools.takewhile(lambda itm: itm[1] > 1, counter.items()))))
+
+        logger.info("Saving vocab...")
+        if save_file.exists():
+            with save_file.open("rb") as f:
+                _v = pickle.load(f)  # NOQA: S301
+                vocabulary.update(_v.counter)
+        with save_file.open("wb") as f:
+            pickle.dump(vocabulary, f)
 
     logger.info("Process complete.")
