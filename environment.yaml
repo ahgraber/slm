@@ -15,34 +15,34 @@ dependencies:
   - ipywidgets
   - joblib
   - notebook
-  - numpy[version='>=1.24,<1.25']
+  - numpy[version='<2.0']
   - pandas[version='>=2.0,<2.1']
   - openpyxl
   - pandera
   - scikit-learn
-  - scipy[version='>=1.10.*,<1.11']
+  - scipy
   - statsmodels
   ### LLM
-  - conda-forge::langchain[version='>=0.1']
-  - conda-forge::llama-index[version='>=0.9,<1']
+  # - conda-forge::langchain[version='>=0.2.*']
+  # - conda-forge::llama-index[version='>=0.10.*']
   - nltk
-  - openai
-  - openapi-core
-  - openapi-schema-validator
+  # - openai
+  # - openapi-core
+  # - openapi-schema-validator
   - sentencepiece
   - spacy
   - tiktoken
-  - huggingface::datasets[version='>=2.15.*,<3']
+  - huggingface::datasets[version='<3']
   - conda-forge::safetensors
   - conda-forge::sentence-transformers
-  - conda-forge::huggingface_hub[version='>0.15,<1.0']
-  - conda-forge::tokenizers[version='>=0.15.*,<0.16']
-  - conda-forge::transformers[version='>4.34,<4.38']
+  - conda-forge::huggingface_hub[version='<1.0']
+  - conda-forge::tokenizers[version='==0.19.1']
+  - conda-forge::transformers[version='==4.41.2']
   - conda-forge::accelerate
-  - pytorch::pytorch[version='>=2.0.*,<2.2']
+  - pytorch::pytorch[version='<3']
   - pytorch::torchaudio
-  - pytorch::torchdata<0.8 # development paused @0.7
-  - pytorch::torchtext<0.17 # development paused @0.16
+  - pytorch::torchdata # <0.8 # development paused @0.7
+  - pytorch::torchtext # <0.17 # development paused @0.16
   - pytorch::torchvision
   - conda-forge::torchmetrics<2
   - conda-forge::tensorboard
@@ -68,6 +68,7 @@ dependencies:
   - jinja2
   - keyring
   - python-dateutil
+  - python-dotenv
   # - pyodbc
   - pytest
   - pyyaml
